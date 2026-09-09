@@ -58,6 +58,20 @@ export function renderGoalCards(containerId) {
 
     const isPassed = goal.status === 'passed';
 
+    // Certification expiration status (Feature: Expired cert tag)
+    let expiryBadge = '';
+    if (isPassed && goal.certExpiryDate) {
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const expiryDate = new Date(goal.certExpiryDate + 'T00:00:00');
+      const diffDays = Math.ceil((expiryDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+      if (diffDays < 0) {
+        expiryBadge = `<span class="badge badge-danger" title="Renewal deadline was ${goal.certExpiryDate}">⚠️ Expired</span>`;
+      } else if (diffDays <= 90) {
+        expiryBadge = `<span class="badge badge-warning" title="Renew by ${goal.certExpiryDate}">⏳ Expires in ${diffDays}d</span>`;
+      }
+    }
+
     return `
       <div class="goal-card card ${isPassed ? 'goal-card-passed' : ''}" data-goal-id="${goal.id}">
         <div class="goal-card-header">
@@ -69,7 +83,10 @@ export function renderGoalCards(containerId) {
             </div>
           </div>
           <div class="goal-badges-group">
-            ${isPassed ? `<span class="badge badge-success">🏆 PASSED</span>` : daysBadge}
+            ${isPassed
+              ? `<span class="badge badge-success">🏆 PASSED</span>${expiryBadge}`
+              : `<span class="badge badge-info">🔄 In Progress</span>${daysBadge}`
+            }
             <div class="dropdown">
               <button class="btn-icon" title="Goal Options" data-action="goal-menu">&#8942;</button>
               <div class="dropdown-menu">

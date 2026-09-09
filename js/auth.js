@@ -130,12 +130,18 @@ export class AuthManager {
         name,
         email,
         avatar: '👩‍🎓',
+        avatarPhoto: null,
         role: 'member',
-        joinedDate: new Date().toISOString().split('T')[0]
+        joinedDate: new Date().toISOString().split('T')[0],
+        credlyUsername: null,
+        mfa: { enabled: false, method: null },
+        onboardingComplete: false,
+        careerGoal: null
       });
       window.certTrackerApp?.showToast(`Welcome to CertTracker, ${name}! Account created.`, 'success');
       close();
       window.certTrackerApp?.renderAll();
+      window.certTrackerApp?.openOnboardingModal();
     });
 
     // Handle Password Reset (US-3)

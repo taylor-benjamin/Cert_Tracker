@@ -7,6 +7,8 @@ export function renderCommunityView(containerId) {
   if (!container) return;
 
   const groups = store.state.studyGroups || [];
+  const certifications = store.state.certifications || [];
+  const friends = store.state.friends || [];
   const streak = store.calculateStreak();
   const { totalHours } = calculateStudyHours(store.state.sessions);
   const user = store.state.user;
@@ -25,7 +27,9 @@ export function renderCommunityView(containerId) {
           </div>
 
           <div class="study-groups-list mt-3">
-            ${groups.map(grp => `
+            ${groups.map(grp => {
+              const grpCert = certifications.find(c => c.id === grp.certId);
+              return `
               <div class="study-group-card">
                 <div class="group-info">
                   <div class="group-title-row">
@@ -37,11 +41,44 @@ export function renderCommunityView(containerId) {
                     <span>👥 ${grp.membersCount} members</span>
                     <span class="mx-2">•</span>
                     <span>💬 Active study room</span>
+                    ${grpCert?.subreddit ? `
+                      <span class="mx-2">•</span>
+                      <a href="https://reddit.com/${grpCert.subreddit}" target="_blank" rel="noopener noreferrer" class="subreddit-link">👽 ${grpCert.subreddit}</a>
+                    ` : ''}
                   </div>
                 </div>
                 <div class="group-action">
                   <button class="btn btn-primary btn-sm btn-join-group" data-group-id="${grp.id}">Enter Study Room</button>
                 </div>
+              </div>
+            `;
+            }).join('')}
+          </div>
+        </div>
+
+        <!-- Follow Friends -->
+        <div class="card mt-3">
+          <div class="card-header-flex">
+            <div>
+              <h3>🤝 Friends</h3>
+              <p class="text-muted text-sm">Follow peers to see their streaks and study pace in your feed</p>
+            </div>
+          </div>
+          <div class="friends-list mt-3">
+            ${friends.length === 0 ? `
+              <div class="text-muted text-center p-3">No friends yet.</div>
+            ` : friends.map(f => `
+              <div class="friend-row">
+                <div class="friend-info">
+                  <span class="peer-avatar">${f.avatar}</span>
+                  <div>
+                    <div class="font-bold">${f.name}</div>
+                    <div class="text-muted text-xs">${f.certName} • 🔥 ${f.streak}d streak • ${f.hoursThisWeek}h this week</div>
+                  </div>
+                </div>
+                <button class="btn btn-sm ${f.following ? 'btn-secondary' : 'btn-primary'} btn-toggle-follow" data-friend-id="${f.id}">
+                  ${f.following ? '✓ Following' : '+ Follow'}
+                </button>
               </div>
             `).join('')}
           </div>
@@ -139,6 +176,15 @@ export function renderCommunityView(containerId) {
   // Attach share progress
   container.querySelector('#btn-share-progress')?.addEventListener('click', () => {
     openShareModal(user, totalHours, streak);
+  });
+
+  // Follow / unfollow friends
+  container.querySelectorAll('.btn-toggle-follow').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const friendId = btn.getAttribute('data-friend-id');
+      store.toggleFollowFriend(friendId);
+      renderCommunityView(containerId);
+    });
   });
 
   // Pomodoro timer logic

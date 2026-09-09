@@ -13,7 +13,9 @@ import {
   calculateWeeklyHours,
   calculateExamReadiness,
   getSmartReminders,
-  getBenchmarkComparison
+  getBenchmarkComparison,
+  getExamPrepTip,
+  buildTimelineEvents
 } from './analytics.js';
 
 class CertTrackerApp {
@@ -37,6 +39,7 @@ class CertTrackerApp {
     // Setup global listeners
     this.setupNavigation();
     this.setupHeaderControls();
+    this.setupChatbot();
     this.renderAll();
   }
 
@@ -69,6 +72,12 @@ class CertTrackerApp {
     document.getElementById('btn-data-sync')?.addEventListener('click', () => {
       this.openDataSyncModal();
     });
+
+    // Push Notification Reminders toggle
+    document.getElementById('btn-notifications')?.addEventListener('click', () => {
+      this.toggleNotifications();
+    });
+    this.updateNotificationBell();
 
     // Global Log Session Quick Button
     document.getElementById('btn-global-log-session')?.addEventListener('click', () => {
@@ -146,14 +155,66 @@ class CertTrackerApp {
     const userBtn = document.getElementById('auth-action-btn');
     if (userBtn) {
       if (store.state.isLoggedIn) {
+        const u = store.state.user || {};
+        const avatarHtml = u.avatarPhoto
+          ? `<img src="${u.avatarPhoto}" class="user-avatar-photo" alt="">`
+          : `<span class="user-avatar">${u.avatar || '👨‍💻'}</span>`;
         userBtn.innerHTML = `
-          <span class="user-avatar">${store.state.user?.avatar || '👨‍💻'}</span>
-          <span class="user-name-text">${store.state.user?.name || 'Account'}</span>
+          ${avatarHtml}
+          <span class="user-name-text">${u.name || 'Account'}</span>
         `;
       } else {
         userBtn.innerHTML = `<span>🔑 Log In</span>`;
       }
     }
+  }
+
+  // ================= PUSH NOTIFICATION REMINDERS =================
+  async toggleNotifications() {
+    if (!('Notification' in window)) {
+      this.showToast('Push notifications are not supported in this browser.', 'warning');
+      return;
+    }
+
+    if (store.state.notificationsEnabled) {
+      store.setNotificationsEnabled(false);
+      this.showToast('Push notification reminders turned off.', 'info');
+      this.updateNotificationBell();
+      return;
+    }
+
+    const permission = await Notification.requestPermission();
+    if (permission === 'granted') {
+      store.setNotificationsEnabled(true);
+      this.showToast('🔔 Push reminders enabled for exam dates & renewal deadlines.', 'success');
+      new Notification('CertTracker Reminders Enabled', {
+        body: 'You\'ll be notified as exam dates and certification renewals approach.'
+      });
+    } else {
+      this.showToast('Notification permission was not granted.', 'warning');
+    }
+    this.updateNotificationBell();
+  }
+
+  updateNotificationBell() {
+    const btn = document.getElementById('btn-notifications');
+    if (!btn) return;
+    const active = store.state.notificationsEnabled && window.Notification?.permission === 'granted';
+    btn.classList.toggle('btn-icon-active', !!active);
+    btn.title = active ? 'Push reminders active — click to disable' : 'Enable push notification reminders';
+  }
+
+  maybeSendPushReminders(reminders) {
+    if (!store.state.notificationsEnabled) return;
+    if (!('Notification' in window) || Notification.permission !== 'granted') return;
+
+    const todayStr = new Date().toISOString().split('T')[0];
+    if (store.state.lastNotifiedAt === todayStr) return; // throttle to once per day
+    if (reminders.length === 0) return;
+
+    const top = reminders[0];
+    new Notification(top.title, { body: top.message });
+    store.setLastNotifiedAt(todayStr);
   }
 
   // ================= DASHBOARD VIEW (US-8 & KPI METRICS) =================
@@ -182,6 +243,7 @@ class CertTrackerApp {
         `).join('');
       }
     }
+    this.maybeSendPushReminders(reminders);
 
     // 2. High Level Metrics
     const { totalHours } = calculateStudyHours(sessions);
@@ -244,6 +306,39 @@ class CertTrackerApp {
 
     // 3. Render Active Goal Summary Cards (US-8)
     renderGoalCards('dashboard-goals-container');
+
+    // 3b. Timeline: upcoming exam dates & cert renewal deadlines with AI prep guidance
+    const timelineContainer = document.getElementById('dashboard-timeline');
+    if (timelineContainer) {
+      const events = buildTimelineEvents(goals);
+      if (events.length === 0) {
+        timelineContainer.innerHTML = '';
+      } else {
+        timelineContainer.innerHTML = `
+          <div class="card timeline-card">
+            <h4>🗓️ Timeline &amp; AI Exam Prep Guidance</h4>
+            <p class="text-muted text-sm">Upcoming exam dates and certification renewal deadlines, with pacing tips</p>
+            <div class="timeline-list mt-3">
+              ${events.slice(0, 6).map(evt => `
+                <div class="timeline-item ${evt.daysAway <= 14 ? 'timeline-item-urgent' : ''}">
+                  <div class="timeline-icon">${evt.icon}</div>
+                  <div class="timeline-body">
+                    <div class="timeline-top-row">
+                      <strong>${evt.label}</strong>
+                      <span class="badge ${evt.daysAway < 0 ? 'badge-danger' : evt.daysAway <= 14 ? 'badge-warning' : 'badge-secondary'}">
+                        ${evt.daysAway < 0 ? 'Overdue' : `${evt.daysAway}d away`}
+                      </span>
+                    </div>
+                    <div class="text-muted text-xs">${evt.date} &bull; ${evt.prep.phase}</div>
+                    <div class="timeline-tip">🤖 ${evt.prep.tip}</div>
+                  </div>
+                </div>
+              `).join('')}
+            </div>
+          </div>
+        `;
+      }
+    }
 
     // 4. Industry Benchmark Comparison (Feature 29)
     const benchmarkContainer = document.getElementById('dashboard-benchmark');
@@ -352,6 +447,8 @@ class CertTrackerApp {
           </div>
 
           <button class="btn btn-primary w-100 mt-3" id="btn-start-quiz-now">🚀 Begin 5-Question Quiz</button>
+          <button class="btn btn-secondary w-100 mt-2" id="btn-generate-quiz-questions">✨ Generate More Questions (AI)</button>
+          <p class="text-muted text-xs mt-1">Expands the question bank for the selected certification using an AI-style generator.</p>
         </div>
 
         <!-- Quiz History & Score Progression (Feature 18) -->
@@ -408,6 +505,14 @@ class CertTrackerApp {
       const domain = document.getElementById('quiz-select-domain').value;
       quizManager.startQuiz(certId, domain);
       this.renderActiveQuizQuestion(container);
+    });
+
+    document.getElementById('btn-generate-quiz-questions')?.addEventListener('click', () => {
+      const certId = document.getElementById('quiz-select-cert').value;
+      const domain = document.getElementById('quiz-select-domain').value;
+      const generated = quizManager.generateQuestionsForCert(certId, domain === 'all' ? null : domain);
+      this.showToast(`✨ Generated ${generated.length} new AI question(s) for the bank!`, 'success');
+      this.renderQuizView(certId);
     });
   }
 
@@ -966,6 +1071,110 @@ class CertTrackerApp {
     modal.querySelector('#btn-close-sugg-modal').addEventListener('click', () => modal.remove());
   }
 
+  // ================= ONBOARDING: Career Roadmap (first login personalization) =================
+  openOnboardingModal() {
+    const certs = store.state.certifications;
+    const modalHtml = `
+      <div class="modal-overlay show" id="onboarding-modal">
+        <div class="modal-content modal-md">
+          <div class="modal-header">
+            <div>
+              <h3>🧭 Let's Build Your Career Roadmap</h3>
+              <p class="text-muted text-sm">Answer a few quick questions so we can personalize your dashboard and suggest a starter goal.</p>
+            </div>
+            <button class="btn-close" id="btn-close-onboarding">&times;</button>
+          </div>
+          <form id="onboarding-form">
+            <div class="modal-body">
+              <div class="form-group">
+                <label class="form-label">What career path are you targeting?</label>
+                <select class="form-select" id="ob-career-path">
+                  <option value="Cloud Architecture">Cloud Architecture / Engineering</option>
+                  <option value="Project Management">Project Management</option>
+                  <option value="Cybersecurity">Cybersecurity</option>
+                  <option value="Finance & Accounting">Finance &amp; Accounting</option>
+                  <option value="Other">Other / Exploring options</option>
+                </select>
+              </div>
+
+              <div class="form-group">
+                <label class="form-label">Current experience level</label>
+                <select class="form-select" id="ob-experience">
+                  <option value="Beginner">Beginner — new to this field</option>
+                  <option value="Intermediate" selected>Intermediate — some hands-on experience</option>
+                  <option value="Advanced">Advanced — years of relevant experience</option>
+                </select>
+              </div>
+
+              <div class="form-row">
+                <div class="form-group flex-1">
+                  <label class="form-label">Hours per week you can study</label>
+                  <input type="number" class="form-input" id="ob-hours-per-week" min="1" max="40" value="8">
+                </div>
+                <div class="form-group flex-1">
+                  <label class="form-label">Certification to start with</label>
+                  <select class="form-select" id="ob-starter-cert">
+                    ${certs.map(c => `<option value="${c.id}">${c.code} – ${c.name}</option>`).join('')}
+                  </select>
+                </div>
+              </div>
+            </div>
+            <div class="modal-footer">
+              <button type="button" class="btn btn-secondary" id="btn-skip-onboarding">Skip for Now</button>
+              <button type="submit" class="btn btn-primary">Build My Roadmap</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    `;
+
+    const div = document.createElement('div');
+    div.innerHTML = modalHtml;
+    document.body.appendChild(div.firstElementChild);
+
+    const modal = document.getElementById('onboarding-modal');
+    const close = () => modal.remove();
+
+    const finishOnboarding = (answers) => {
+      store.completeOnboarding(answers);
+      close();
+      this.renderAll();
+    };
+
+    modal.querySelector('#btn-close-onboarding').addEventListener('click', () => finishOnboarding(null));
+    modal.querySelector('#btn-skip-onboarding').addEventListener('click', () => finishOnboarding(null));
+
+    modal.querySelector('#onboarding-form').addEventListener('submit', (e) => {
+      e.preventDefault();
+      const careerPath = document.getElementById('ob-career-path').value;
+      const experience = document.getElementById('ob-experience').value;
+      const hoursPerWeek = Number(document.getElementById('ob-hours-per-week').value) || 8;
+      const starterCertId = document.getElementById('ob-starter-cert').value;
+      const cert = certs.find(c => c.id === starterCertId);
+
+      // Only auto-create a starter goal if the user has no goals yet
+      if (cert && store.state.goals.length === 0) {
+        const targetHours = cert.defaultTargetHours || 80;
+        const weeksNeeded = Math.max(4, Math.ceil(targetHours / hoursPerWeek));
+        const targetDate = new Date(Date.now() + weeksNeeded * 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+        store.addGoal({
+          certId: cert.id,
+          certName: cert.name,
+          certCode: cert.code,
+          targetDate,
+          targetHours,
+          weeklyHourTarget: hoursPerWeek,
+          notes: `Auto-suggested starter goal based on your ${careerPath} career roadmap (${experience} level).`
+        });
+        this.showToast(`🧭 Roadmap ready! Created a starter goal for ${cert.code}.`, 'success');
+      } else {
+        this.showToast('🧭 Career roadmap saved!', 'success');
+      }
+
+      finishOnboarding({ careerPath, experience, hoursPerWeek, starterCertId });
+    });
+  }
+
   openDataSyncModal() {
     const modalHtml = `
       <div class="modal-overlay show" id="data-sync-modal">
@@ -1061,6 +1270,7 @@ class CertTrackerApp {
 
   openUserMenuModal() {
     const user = store.state.user;
+    const mfa = user.mfa || { enabled: false, method: null };
     const modalHtml = `
       <div class="modal-overlay show" id="user-menu-modal">
         <div class="modal-content modal-sm">
@@ -1069,10 +1279,52 @@ class CertTrackerApp {
             <button class="btn-close" id="btn-close-user-menu">&times;</button>
           </div>
           <div class="modal-body text-center">
-            <div class="user-big-avatar">${user.avatar || '👨‍💻'}</div>
+            <div class="profile-photo-wrap">
+              ${user.avatarPhoto
+                ? `<img src="${user.avatarPhoto}" class="user-big-avatar-photo" alt="Profile photo">`
+                : `<div class="user-big-avatar">${user.avatar || '👨‍💻'}</div>`
+              }
+              <input type="file" id="input-avatar-photo" accept="image/*" style="display:none;">
+              <button class="btn btn-secondary btn-sm mt-2" id="btn-change-photo">📷 ${user.avatarPhoto ? 'Change Photo' : 'Upload Profile Photo'}</button>
+              ${user.avatarPhoto ? `<button class="btn-icon btn-sm ml-2" id="btn-remove-photo" title="Remove photo">🗑️</button>` : ''}
+            </div>
             <h3 class="mt-2">${user.name}</h3>
             <p class="text-muted text-sm">${user.email}</p>
             <div class="badge badge-primary mt-1">Role: ${user.role || 'Member'}</div>
+
+            <div class="account-section-block mt-3 text-left">
+              <h4 class="text-sm">🏅 Credly Verification</h4>
+              ${user.credlyUsername ? `
+                <div class="credly-linked-row">
+                  <span class="badge badge-success">✅ Linked: ${user.credlyUsername}</span>
+                  <button class="btn btn-secondary btn-sm" id="btn-unlink-credly">Unlink</button>
+                </div>
+              ` : `
+                <form id="credly-link-form" class="form-row">
+                  <input type="text" class="form-input flex-1" id="credly-username-input" placeholder="Your Credly username" required>
+                  <button type="submit" class="btn btn-primary btn-sm">Link Account</button>
+                </form>
+              `}
+            </div>
+
+            <div class="account-section-block mt-3 text-left">
+              <h4 class="text-sm">🔐 Multi-Factor Authentication</h4>
+              ${mfa.enabled ? `
+                <div class="credly-linked-row">
+                  <span class="badge badge-success">✅ Enabled via ${mfa.method}</span>
+                  <button class="btn btn-outline-danger btn-sm" id="btn-disable-mfa">Disable</button>
+                </div>
+              ` : `
+                <div class="form-row">
+                  <select class="form-select flex-1" id="mfa-method-select">
+                    <option value="authenticator">Authenticator App</option>
+                    <option value="email">Email Code</option>
+                    <option value="sms">Text Message (SMS)</option>
+                  </select>
+                  <button class="btn btn-primary btn-sm" id="btn-enable-mfa">Enable MFA</button>
+                </div>
+              `}
+            </div>
 
             <div class="user-menu-actions mt-4">
               <button class="btn btn-secondary w-100 mb-2" id="btn-switch-account">Switch Account / Sign In</button>
@@ -1091,6 +1343,61 @@ class CertTrackerApp {
     const close = () => modal.remove();
     modal.querySelector('#btn-close-user-menu').addEventListener('click', close);
 
+    // Profile photo upload
+    const photoInput = modal.querySelector('#input-avatar-photo');
+    modal.querySelector('#btn-change-photo')?.addEventListener('click', () => photoInput.click());
+    photoInput?.addEventListener('change', (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = (evt) => {
+        store.setUserAvatarPhoto(evt.target.result);
+        this.showToast('Profile photo updated!', 'success');
+        close();
+        this.openUserMenuModal();
+        this.updateHeaderStats();
+      };
+      reader.readAsDataURL(file);
+    });
+    modal.querySelector('#btn-remove-photo')?.addEventListener('click', () => {
+      store.removeUserAvatarPhoto();
+      close();
+      this.openUserMenuModal();
+      this.updateHeaderStats();
+    });
+
+    // Credly linking (simulated OAuth handshake)
+    modal.querySelector('#credly-link-form')?.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const username = document.getElementById('credly-username-input').value.trim();
+      if (!username) return;
+      store.linkCredly(username);
+      this.showToast(`🏅 Credly account "${username}" linked & verified!`, 'success');
+      close();
+      this.openUserMenuModal();
+    });
+    modal.querySelector('#btn-unlink-credly')?.addEventListener('click', () => {
+      store.unlinkCredly();
+      close();
+      this.openUserMenuModal();
+    });
+
+    // MFA
+    modal.querySelector('#btn-enable-mfa')?.addEventListener('click', () => {
+      const method = document.getElementById('mfa-method-select').value;
+      store.setMfaSettings({ enabled: true, method });
+      this.showToast(`🔐 MFA enabled via ${method}`, 'success');
+      close();
+      this.openUserMenuModal();
+    });
+    modal.querySelector('#btn-disable-mfa')?.addEventListener('click', () => {
+      if (confirm('Disable multi-factor authentication for this account?')) {
+        store.setMfaSettings({ enabled: false, method: null });
+        close();
+        this.openUserMenuModal();
+      }
+    });
+
     modal.querySelector('#btn-switch-account').addEventListener('click', () => {
       close();
       authManager.openAuthModal('login');
@@ -1108,6 +1415,124 @@ class CertTrackerApp {
       dateFrom: dateStr,
       dateTo: dateStr
     });
+  }
+
+  // ================= AI STUDY ASSISTANT CHATBOT =================
+  setupChatbot() {
+    this.chatHistory = [
+      { role: 'bot', text: 'Hi! I\'m your AI Study Assistant. Ask me about your exam readiness, streak, hours, or study tips.' }
+    ];
+
+    const widgetHtml = `
+      <div class="chatbot-widget" id="chatbot-widget">
+        <button class="chatbot-toggle-btn" id="chatbot-toggle-btn" title="AI Study Assistant">🤖</button>
+        <div class="chatbot-panel" id="chatbot-panel" hidden>
+          <div class="chatbot-header">
+            <span>🤖 AI Study Assistant</span>
+            <button class="btn-close" id="btn-close-chatbot">&times;</button>
+          </div>
+          <div class="chatbot-messages" id="chatbot-messages"></div>
+          <form class="chatbot-input-row" id="chatbot-form">
+            <input type="text" class="form-input" id="chatbot-input" placeholder="Ask about readiness, streak, tips..." autocomplete="off">
+            <button type="submit" class="btn btn-primary btn-sm">Send</button>
+          </form>
+        </div>
+      </div>
+    `;
+    const div = document.createElement('div');
+    div.innerHTML = widgetHtml;
+    document.body.appendChild(div.firstElementChild);
+
+    const panel = document.getElementById('chatbot-panel');
+    document.getElementById('chatbot-toggle-btn').addEventListener('click', () => {
+      panel.hidden = !panel.hidden;
+      if (!panel.hidden) document.getElementById('chatbot-input')?.focus();
+    });
+    document.getElementById('btn-close-chatbot').addEventListener('click', () => { panel.hidden = true; });
+
+    document.getElementById('chatbot-form').addEventListener('submit', (e) => {
+      e.preventDefault();
+      const input = document.getElementById('chatbot-input');
+      const text = input.value.trim();
+      if (!text) return;
+      this.chatHistory.push({ role: 'user', text });
+      this.chatHistory.push({ role: 'bot', text: this.getChatbotResponse(text) });
+      input.value = '';
+      this.renderChatMessages();
+    });
+
+    this.renderChatMessages();
+  }
+
+  renderChatMessages() {
+    const container = document.getElementById('chatbot-messages');
+    if (!container) return;
+    const escapeHtml = (str) => str.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+    container.innerHTML = this.chatHistory.map(m => `
+      <div class="chat-msg chat-msg-${m.role}">${m.role === 'user' ? escapeHtml(m.text) : m.text}</div>
+    `).join('');
+    container.scrollTop = container.scrollHeight;
+  }
+
+  /**
+   * Rule-based AI study assistant. Answers are derived entirely from local
+   * app state (no external API call — a real assistant would call an LLM
+   * from a secured backend rather than exposing an API key in the browser).
+   */
+  getChatbotResponse(rawText) {
+    const text = rawText.toLowerCase();
+    const goals = store.state.goals.filter(g => g.status !== 'passed');
+    const sessions = store.state.sessions;
+    const certs = store.state.certifications;
+    const streak = store.calculateStreak();
+
+    if (goals.length === 0) {
+      return 'You don\'t have any active certification goals yet. Head to the Goals tab to create one and I can help you track it!';
+    }
+
+    const primaryGoal = goals[0];
+    const primaryCert = certs.find(c => c.id === primaryGoal.certId);
+    const readiness = calculateExamReadiness(primaryGoal, sessions, store.state.quizHistory, primaryCert);
+    const { totalHours } = calculateStudyHours(sessions, primaryGoal.id);
+
+    if (text.includes('streak')) {
+      return streak > 0
+        ? `You're on a 🔥 ${streak}-day study streak! Log a session today to keep it alive.`
+        : 'No active streak right now — log a study session today to start a new one!';
+    }
+
+    if (text.includes('ready') || text.includes('readiness')) {
+      return `Your exam readiness for ${primaryGoal.certName} is ${readiness.score}% (${readiness.status}). ${readiness.score < 70 ? 'Focus on hitting your weekly hour target and taking a practice quiz.' : 'Great shape — keep reinforcing weaker domains with practice questions.'}`;
+    }
+
+    if (text.includes('hour') || text.includes('progress')) {
+      return `You've logged ${totalHours}h toward your ${primaryGoal.targetHours}h goal for ${primaryGoal.certName} — that's ${Math.min(100, Math.round((totalHours / (primaryGoal.targetHours || 1)) * 100))}% of the way there.`;
+    }
+
+    if (text.includes('quiz')) {
+      const certQuizzes = store.state.quizHistory.filter(q => q.certId === primaryGoal.certId);
+      if (certQuizzes.length === 0) return `You haven't taken a practice quiz for ${primaryGoal.certName} yet — head to the Quiz tab to gauge where you stand.`;
+      const avg = Math.round(certQuizzes.reduce((s, q) => s + q.score, 0) / certQuizzes.length);
+      return `Your average quiz score for ${primaryGoal.certName} is ${avg}% across ${certQuizzes.length} attempt(s). ${avg < 70 ? 'Consider reviewing missed rationales before your next attempt.' : 'Solid scoring — keep it up!'}`;
+    }
+
+    if (text.includes('exam') || text.includes('date') || text.includes('when')) {
+      if (!primaryGoal.targetDate) return `You haven't set a target exam date for ${primaryGoal.certName} yet — add one from the Goals tab so I can help you pace your studying.`;
+      const tip = getExamPrepTip(readiness.daysUntilExam);
+      return `${primaryGoal.certName} is ${readiness.daysUntilExam} day(s) away. Prep phase: ${tip.phase}. ${tip.tip}`;
+    }
+
+    if (text.includes('tip') || text.includes('help') || text.includes('study') || text.includes('advice')) {
+      const tip = getExamPrepTip(readiness.daysUntilExam);
+      return `🤖 Study tip for ${primaryGoal.certName}: ${tip.tip}`;
+    }
+
+    if (text.includes('resource') || text.includes('material') || text.includes('book')) {
+      const res = primaryCert?.suggestedResources?.[0];
+      return res ? `A recommended resource for ${primaryGoal.certName}: "${res.title}" (${res.type}). Check the Dashboard's suggested resources card for more.` : 'Check the Dashboard for curated study resources tailored to your certification.';
+    }
+
+    return 'I can help with: exam readiness, study streak, hours progress, quiz scores, exam-date prep tips, or resource suggestions. Try asking "How ready am I?" or "Give me a study tip."';
   }
 
   showToast(message, type = 'info') {

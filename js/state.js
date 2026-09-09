@@ -5,6 +5,7 @@ import {
   INITIAL_USER,
   getInitialGoals,
   getInitialSessions,
+  getInitialFriends,
   SPRINT_1_STORIES,
   INITIAL_BURNDOWN_DAYS,
   INITIAL_RETROSPECTIVE
@@ -46,6 +47,10 @@ class StateStore {
           sprintStories: parsed.sprintStories || SPRINT_1_STORIES,
           burndownDays: parsed.burndownDays || INITIAL_BURNDOWN_DAYS,
           retrospective: parsed.retrospective || INITIAL_RETROSPECTIVE,
+          friends: parsed.friends || getInitialFriends(),
+          generatedQuestions: parsed.generatedQuestions || {},
+          notificationsEnabled: parsed.notificationsEnabled || false,
+          lastNotifiedAt: parsed.lastNotifiedAt || null,
           studyGroups: parsed.studyGroups || [
             {
               id: 'grp_aws',
@@ -100,6 +105,10 @@ class StateStore {
       sprintStories: SPRINT_1_STORIES,
       burndownDays: INITIAL_BURNDOWN_DAYS,
       retrospective: INITIAL_RETROSPECTIVE,
+      friends: getInitialFriends(),
+      generatedQuestions: {},
+      notificationsEnabled: false,
+      lastNotifiedAt: null,
       studyGroups: [
         {
           id: 'grp_aws',
@@ -187,6 +196,70 @@ class StateStore {
     this.saveState();
   }
 
+  setUserAvatarPhoto(dataUrl) {
+    this.state.user = { ...this.state.user, avatarPhoto: dataUrl };
+    this.saveState();
+  }
+
+  removeUserAvatarPhoto() {
+    this.state.user = { ...this.state.user, avatarPhoto: null };
+    this.saveState();
+  }
+
+  linkCredly(username) {
+    this.state.user = { ...this.state.user, credlyUsername: username };
+    this.saveState();
+  }
+
+  unlinkCredly() {
+    this.state.user = { ...this.state.user, credlyUsername: null };
+    this.saveState();
+  }
+
+  setMfaSettings(mfa) {
+    this.state.user = { ...this.state.user, mfa };
+    this.saveState();
+  }
+
+  completeOnboarding(answers) {
+    this.state.user = {
+      ...this.state.user,
+      onboardingComplete: true,
+      careerGoal: answers
+    };
+    this.saveState();
+  }
+
+  // --- Community: Follow Friends ---
+  toggleFollowFriend(friendId) {
+    const friend = this.state.friends.find(f => f.id === friendId);
+    if (friend) {
+      friend.following = !friend.following;
+      this.saveState();
+    }
+  }
+
+  // --- Quiz: AI-Generated Question Bank ---
+  addGeneratedQuestions(certId, questions) {
+    if (!this.state.generatedQuestions[certId]) {
+      this.state.generatedQuestions[certId] = [];
+    }
+    this.state.generatedQuestions[certId].push(...questions);
+    this.saveState();
+    return this.state.generatedQuestions[certId];
+  }
+
+  // --- Push Notification Reminders ---
+  setNotificationsEnabled(enabled) {
+    this.state.notificationsEnabled = enabled;
+    this.saveState();
+  }
+
+  setLastNotifiedAt(dateStr) {
+    this.state.lastNotifiedAt = dateStr;
+    this.saveState();
+  }
+
   // --- Goals Management ---
   addGoal(goalData) {
     const newGoal = {
@@ -225,6 +298,15 @@ class StateStore {
       goal.status = status;
       if (status === 'passed') {
         this.unlockBadge('first_pass');
+        goal.passedDate = new Date().toISOString().split('T')[0];
+        const cert = this.state.certifications.find(c => c.id === goal.certId);
+        if (cert && cert.validityYears) {
+          const expiry = new Date();
+          expiry.setFullYear(expiry.getFullYear() + cert.validityYears);
+          goal.certExpiryDate = expiry.toISOString().split('T')[0];
+        } else {
+          goal.certExpiryDate = null;
+        }
       }
       this.saveState();
     }
@@ -436,6 +518,10 @@ class StateStore {
       sprintStories: SPRINT_1_STORIES,
       burndownDays: INITIAL_BURNDOWN_DAYS,
       retrospective: INITIAL_RETROSPECTIVE,
+      friends: getInitialFriends(),
+      generatedQuestions: {},
+      notificationsEnabled: false,
+      lastNotifiedAt: null,
       studyGroups: [
         {
           id: 'grp_aws',

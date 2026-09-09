@@ -11,6 +11,8 @@ export const DEFAULT_CERTIFICATIONS = [
     defaultTargetHours: 90,
     avgWeeksToCertify: 10,
     avgHoursPerWeek: 9,
+    validityYears: 3,
+    subreddit: 'r/AWSCertifications',
     domains: [
       { id: 'd1', name: 'Design Resilient Architectures', weight: 26 },
       { id: 'd2', name: 'Design High-Performing Architectures', weight: 24 },
@@ -35,6 +37,8 @@ export const DEFAULT_CERTIFICATIONS = [
     defaultTargetHours: 120,
     avgWeeksToCertify: 12,
     avgHoursPerWeek: 10,
+    validityYears: 3,
+    subreddit: 'r/pmp',
     domains: [
       { id: 'd1', name: 'People (Conflict, Leadership, Team)', weight: 42 },
       { id: 'd2', name: 'Process (Scope, Schedule, Budget, Quality)', weight: 50 },
@@ -58,6 +62,8 @@ export const DEFAULT_CERTIFICATIONS = [
     defaultTargetHours: 80,
     avgWeeksToCertify: 8,
     avgHoursPerWeek: 10,
+    validityYears: 3,
+    subreddit: 'r/CompTIA',
     domains: [
       { id: 'd1', name: 'General Security Concepts', weight: 12 },
       { id: 'd2', name: 'Threats, Vulnerabilities, and Mitigations', weight: 22 },
@@ -82,6 +88,8 @@ export const DEFAULT_CERTIFICATIONS = [
     defaultTargetHours: 110,
     avgWeeksToCertify: 10,
     avgHoursPerWeek: 11,
+    validityYears: null,
+    subreddit: 'r/CPA',
     domains: [
       { id: 'd1', name: 'Ethics, Professional Responsibilities and General Principles', weight: 20 },
       { id: 'd2', name: 'Assessing Risk and Developing a Planned Response', weight: 30 },
@@ -105,6 +113,8 @@ export const DEFAULT_CERTIFICATIONS = [
     defaultTargetHours: 85,
     avgWeeksToCertify: 9,
     avgHoursPerWeek: 9.5,
+    validityYears: 2,
+    subreddit: 'r/AzureCertification',
     domains: [
       { id: 'd1', name: 'Design Identity, Governance, and Monitoring Solutions', weight: 27 },
       { id: 'd2', name: 'Design Data Storage Solutions', weight: 25 },
@@ -190,9 +200,24 @@ export const INITIAL_USER = {
   name: 'Alex Rivera',
   email: 'alex.rivera@example.com',
   avatar: '👨‍💻',
+  avatarPhoto: null, // data URL of an uploaded profile photo, overrides the emoji avatar when set
   role: 'member',
-  joinedDate: '2026-08-15'
+  joinedDate: '2026-08-15',
+  credlyUsername: null,
+  mfa: { enabled: false, method: null }, // method: 'authenticator' | 'email' | 'sms'
+  onboardingComplete: true, // demo persona already has seeded goals; new signups start with this false
+  careerGoal: null
 };
+
+// Sample peers for the Community "Follow Friends" feature
+export function getInitialFriends() {
+  return [
+    { id: 'frnd_1', name: 'Elena Rostova', avatar: '👩‍🔬', certName: 'AWS Certified Solutions Architect', streak: 12, hoursThisWeek: 6.5, following: true },
+    { id: 'frnd_2', name: 'Marcus Vance', avatar: '👨‍💼', certName: 'Project Management Professional (PMP)', streak: 4, hoursThisWeek: 3.0, following: true },
+    { id: 'frnd_3', name: 'Samantha Wu', avatar: '👩‍💻', certName: 'CompTIA Security+ (SY0-701)', streak: 21, hoursThisWeek: 9.0, following: false },
+    { id: 'frnd_4', name: 'Devon Reed', avatar: '🧑‍💻', certName: 'AWS Certified Solutions Architect – Associate', streak: 0, hoursThisWeek: 0, following: false }
+  ];
+}
 
 // Seed sample goals to give user an immediate rich experience
 export function getInitialGoals() {

@@ -10,10 +10,16 @@ class QuizManager {
     this.submitted = false;
   }
 
+  getQuestionBank(certId) {
+    const base = QUIZ_QUESTIONS[certId] || [];
+    const generated = store.state.generatedQuestions?.[certId] || [];
+    return [...base, ...generated];
+  }
+
   getAvailableCertifications() {
     return Object.keys(QUIZ_QUESTIONS).map(certId => {
       const cert = store.state.certifications.find(c => c.id === certId);
-      const questionCount = QUIZ_QUESTIONS[certId]?.length || 0;
+      const questionCount = this.getQuestionBank(certId).length;
       return {
         id: certId,
         name: cert ? cert.name : certId.toUpperCase(),
@@ -23,8 +29,74 @@ class QuizManager {
     });
   }
 
+  /**
+   * Simulates an AI-generated question bank expansion for a certification/domain.
+   * A real implementation would call an LLM API from a secured backend (never
+   * directly from the browser, to avoid exposing API keys) — this local
+   * template generator stands in for that call so the feature is usable offline.
+   */
+  generateQuestionsForCert(certId, domainName = null) {
+    const cert = store.state.certifications.find(c => c.id === certId);
+    if (!cert) return [];
+
+    const domains = domainName
+      ? cert.domains.filter(d => d.name === domainName)
+      : cert.domains;
+
+    const templates = [
+      d => ({
+        question: `Which of the following best reflects a core best practice within "${d.name}" for the ${cert.code} exam?`,
+        options: [
+          `Following documented ${cert.provider} guidance and validated design patterns`,
+          'Skipping documentation review to save study time',
+          'Relying solely on anecdotal exam-dump answers',
+          'Ignoring exam blueprint weighting when studying'
+        ],
+        answerIndex: 0,
+        explanation: `Official ${cert.provider} guidance and validated patterns are the most reliable basis for "${d.name}" exam scenarios.`
+      }),
+      d => ({
+        question: `A candidate is prioritizing study time across exam domains. Given "${d.name}" carries meaningful exam weight, what is the recommended approach?`,
+        options: [
+          'Allocate study time proportional to domain weighting and personal weak spots',
+          'Study every domain for an identical number of hours regardless of weight',
+          'Skip the domain entirely if it seems unfamiliar',
+          'Only review it the night before the exam'
+        ],
+        answerIndex: 0,
+        explanation: 'Effective exam prep allocates time proportionally to domain weight and to the candidate\'s own knowledge gaps.'
+      }),
+      d => ({
+        question: `Which study method is most effective for reinforcing scenario-based questions in "${d.name}"?`,
+        options: [
+          'Timed practice questions followed by reviewing explanations for missed answers',
+          'Passive re-reading of notes without self-testing',
+          'Memorizing answer letter positions from a single practice set',
+          'Avoiding practice questions until the final week'
+        ],
+        answerIndex: 0,
+        explanation: 'Active recall via timed practice questions, followed by reviewing rationale, builds durable scenario-based understanding.'
+      })
+    ];
+
+    const newQuestions = domains.map((d, idx) => {
+      const template = templates[idx % templates.length](d);
+      return {
+        domain: d.name,
+        generated: true,
+        generatedAt: new Date().toISOString(),
+        ...template
+      };
+    });
+
+    if (newQuestions.length > 0) {
+      store.addGeneratedQuestions(certId, newQuestions);
+    }
+    return newQuestions;
+  }
+
   startQuiz(certId, domainFilter = null) {
-    let questions = QUIZ_QUESTIONS[certId] || [];
+    let questions = this.getQuestionBank(certId);
     if (domainFilter && domainFilter !== 'all') {
       questions = questions.filter(q => q.domain === domainFilter);
     }

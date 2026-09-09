@@ -164,7 +164,33 @@ export function getSmartReminders(goals, sessions) {
   today.setHours(0, 0, 0, 0);
 
   for (const goal of goals) {
-    if (goal.status === 'passed') continue;
+    if (goal.status === 'passed') {
+      // Check certification expiration / renewal proximity
+      if (goal.certExpiryDate) {
+        const expiryDate = new Date(goal.certExpiryDate + 'T00:00:00');
+        const diffDays = Math.ceil((expiryDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+        if (diffDays <= 90 && diffDays >= 0) {
+          reminders.push({
+            id: 'rem_expiry_' + goal.id,
+            type: diffDays <= 30 ? 'urgent' : 'warning',
+            icon: '⏳',
+            title: `${goal.certName}: Renewal due in ${diffDays} days`,
+            message: 'Your certification is approaching its expiration date. Start logging renewal / continuing-education credits now.',
+            goalId: goal.id
+          });
+        } else if (diffDays < 0) {
+          reminders.push({
+            id: 'rem_expired_' + goal.id,
+            type: 'urgent',
+            icon: '⚠️',
+            title: `${goal.certName}: Certification Expired`,
+            message: 'This certification has passed its renewal deadline. Recertify to keep your credential active.',
+            goalId: goal.id
+          });
+        }
+      }
+      continue;
+    }
 
     // Check Exam Proximity
     if (goal.targetDate) {
@@ -217,6 +243,75 @@ export function getSmartReminders(goals, sessions) {
   }
 
   return reminders;
+}
+
+/**
+ * AI-style exam prep tip for a given number of days remaining until the exam.
+ * Powers the Timeline's "prep guidance" callouts.
+ */
+export function getExamPrepTip(daysUntilExam) {
+  if (daysUntilExam === null || daysUntilExam === undefined) {
+    return { phase: 'No Exam Date Set', tip: 'Set a target exam date to unlock a personalized prep timeline.' };
+  }
+  if (daysUntilExam < 0) {
+    return { phase: 'Past Due', tip: 'Your target date has passed — reschedule the exam or mark the goal as passed.' };
+  }
+  if (daysUntilExam <= 3) {
+    return { phase: 'Final Countdown', tip: 'Light review only: skim weak-domain flashcards, sleep well, and avoid cramming new material.' };
+  }
+  if (daysUntilExam <= 14) {
+    return { phase: 'Final Review', tip: 'Shift to full-length practice exams and timed drills on your lowest-scoring domains.' };
+  }
+  if (daysUntilExam <= 30) {
+    return { phase: 'Practice & Reinforce', tip: 'Mix practice questions with hands-on labs to convert knowledge into exam-day recall speed.' };
+  }
+  if (daysUntilExam <= 60) {
+    return { phase: 'Deepen Coverage', tip: 'Round out any domains you have not logged sessions in yet — breadth matters as much as depth now.' };
+  }
+  return { phase: 'Foundation Building', tip: 'Focus on core concepts and structured coursework before moving to practice tests.' };
+}
+
+/**
+ * Builds a chronological timeline of upcoming exam dates and certification
+ * renewal deadlines across all goals, for the Dashboard Timeline view.
+ */
+export function buildTimelineEvents(goals) {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const events = [];
+
+  for (const goal of goals) {
+    if (goal.status !== 'passed' && goal.targetDate) {
+      const examDate = new Date(goal.targetDate + 'T00:00:00');
+      const daysAway = Math.ceil((examDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+      events.push({
+        id: 'evt_exam_' + goal.id,
+        type: 'exam',
+        icon: '🎯',
+        date: goal.targetDate,
+        daysAway,
+        certName: goal.certName,
+        label: `${goal.certName} Exam`,
+        prep: getExamPrepTip(daysAway)
+      });
+    }
+    if (goal.status === 'passed' && goal.certExpiryDate) {
+      const expiryDate = new Date(goal.certExpiryDate + 'T00:00:00');
+      const daysAway = Math.ceil((expiryDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+      events.push({
+        id: 'evt_expiry_' + goal.id,
+        type: 'expiry',
+        icon: '⏳',
+        date: goal.certExpiryDate,
+        daysAway,
+        certName: goal.certName,
+        label: `${goal.certName} Renewal Deadline`,
+        prep: { phase: 'Renewal', tip: daysAway <= 90 ? 'Start renewal credits/CE requirements now to avoid a lapsed certification.' : 'No action needed yet — renewal window opens closer to the deadline.' }
+      });
+    }
+  }
+
+  return events.sort((a, b) => a.daysAway - b.daysAway);
 }
 
 /**
