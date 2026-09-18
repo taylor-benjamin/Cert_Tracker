@@ -18,11 +18,21 @@
     </div>
     <div class="header-right">
       <span class="streak-pill" id="header-streak-pill">🔥 0 Day Streak</span>
-      <button class="btn btn-secondary btn-header" id="btn-global-log-session">+ Log Session</button>
-      <button class="btn btn-secondary btn-header" id="btn-global-create-goal">+ New Goal</button>
-      <button class="btn-icon" id="btn-notifications" title="Push Notification Reminders">🔔</button>
-      <button class="btn-icon" id="btn-data-sync" title="Data Sync &amp; Export">💾</button>
-      <button class="btn-icon btn-theme" id="theme-toggle-btn" title="Toggle theme">☀️ Light</button>
+
+      <div class="dropdown">
+        <button class="btn btn-primary btn-header" id="btn-header-add" title="Add">+ Add ▾</button>
+        <div class="dropdown-menu">
+          <button class="dropdown-item" id="btn-global-log-session">📝 Log Session</button>
+          <button class="dropdown-item" id="btn-global-create-goal">🎯 New Goal</button>
+        </div>
+      </div>
+
+      <div class="icon-toolbar">
+        <button class="btn-icon" id="btn-notifications" title="Push Notification Reminders">🔔</button>
+        <button class="btn-icon" id="btn-data-sync" title="Data Sync &amp; Export">💾</button>
+        <button class="btn-icon btn-theme" id="theme-toggle-btn" title="Toggle theme">☀️</button>
+      </div>
+
       <button class="user-btn" id="auth-action-btn"><span>🔑 Log In</span></button>
     </div>
   </header>
@@ -33,7 +43,6 @@
     <button class="nav-tab" data-tab="sessions"><span class="tab-icon">📝</span> Sessions</button>
     <button class="nav-tab" data-tab="quiz"><span class="tab-icon">🧠</span> Quiz</button>
     <button class="nav-tab" data-tab="calendar"><span class="tab-icon">📅</span> Calendar</button>
-    <button class="nav-tab" data-tab="sprint-hub"><span class="tab-icon">🚀</span> Sprint Hub</button>
     <button class="nav-tab" data-tab="community"><span class="tab-icon">👥</span> Community</button>
     <button class="nav-tab" data-tab="admin"><span class="tab-icon">🛠️</span> Admin</button>
   </nav>
@@ -82,11 +91,6 @@
       <div class="card calendar-card">
         <div id="calendar-container"></div>
       </div>
-    </section>
-
-    <!-- SPRINT HUB -->
-    <section class="tab-view" id="view-sprint-hub">
-      <div id="sprint-hub-container"></div>
     </section>
 
     <!-- COMMUNITY -->

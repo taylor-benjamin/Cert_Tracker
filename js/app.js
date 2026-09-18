@@ -5,7 +5,6 @@ import { renderGoalCards } from './goals.js';
 import { SessionsManager } from './sessions.js';
 import { quizManager } from './quiz.js';
 import { CalendarManager } from './calendar.js';
-import { SprintHubManager } from './sprint-hub.js';
 import { renderCommunityView } from './community.js';
 import { AdminManager } from './admin.js';
 import {
@@ -23,7 +22,6 @@ class CertTrackerApp {
     this.currentTab = 'dashboard';
     this.sessionsManager = new SessionsManager('sessions-container');
     this.calendarManager = new CalendarManager('calendar-container');
-    this.sprintHubManager = new SprintHubManager('sprint-hub-container');
     this.adminManager = new AdminManager('admin-container');
   }
 
@@ -47,7 +45,8 @@ class CertTrackerApp {
     document.documentElement.setAttribute('data-theme', theme);
     const themeBtn = document.getElementById('theme-toggle-btn');
     if (themeBtn) {
-      themeBtn.innerHTML = theme === 'dark' ? '☀️ Light' : '🌙 Dark';
+      themeBtn.innerHTML = theme === 'dark' ? '☀️' : '🌙';
+      themeBtn.title = theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode';
     }
   }
 
@@ -78,6 +77,21 @@ class CertTrackerApp {
       this.toggleNotifications();
     });
     this.updateNotificationBell();
+
+    // Header "+ Add" dropdown
+    document.getElementById('btn-header-add')?.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const menu = e.currentTarget.nextElementSibling;
+      document.querySelectorAll('.dropdown-menu.show').forEach(m => {
+        if (m !== menu) m.classList.remove('show');
+      });
+      menu.classList.toggle('show');
+    });
+
+    // Close any open dropdown menu when clicking outside it
+    document.addEventListener('click', () => {
+      document.querySelectorAll('.dropdown-menu.show').forEach(m => m.classList.remove('show'));
+    });
 
     // Global Log Session Quick Button
     document.getElementById('btn-global-log-session')?.addEventListener('click', () => {
@@ -128,8 +142,6 @@ class CertTrackerApp {
       this.renderQuizView(param);
     } else if (tabName === 'calendar') {
       this.calendarManager.render();
-    } else if (tabName === 'sprint-hub') {
-      this.sprintHubManager.render();
     } else if (tabName === 'community') {
       renderCommunityView('community-container');
     } else if (tabName === 'admin') {
@@ -1444,11 +1456,21 @@ class CertTrackerApp {
     document.body.appendChild(div.firstElementChild);
 
     const panel = document.getElementById('chatbot-panel');
-    document.getElementById('chatbot-toggle-btn').addEventListener('click', () => {
+    const widget = document.getElementById('chatbot-widget');
+    document.getElementById('chatbot-toggle-btn').addEventListener('click', (e) => {
+      e.stopPropagation();
       panel.hidden = !panel.hidden;
       if (!panel.hidden) document.getElementById('chatbot-input')?.focus();
     });
     document.getElementById('btn-close-chatbot').addEventListener('click', () => { panel.hidden = true; });
+
+    // Close when clicking outside the widget, or pressing Escape
+    document.addEventListener('click', (e) => {
+      if (!panel.hidden && !widget.contains(e.target)) panel.hidden = true;
+    });
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && !panel.hidden) panel.hidden = true;
+    });
 
     document.getElementById('chatbot-form').addEventListener('submit', (e) => {
       e.preventDefault();
