@@ -552,6 +552,7 @@ select, option { color-scheme: light dark; }
 .reminder-info .reminder-icon { color: var(--color-info); }
 .reminder-body { flex: 1; }
 .reminder-body p { margin: 2px 0 0; font-size: 0.85rem; color: var(--text-muted); }
+.reminder-dismiss { flex-shrink: 0; padding: 0 2px; }
 
 .kpi-grid {
   display: grid;

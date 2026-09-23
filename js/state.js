@@ -51,6 +51,7 @@ class StateStore {
           generatedQuestions: parsed.generatedQuestions || {},
           notificationsEnabled: parsed.notificationsEnabled || false,
           lastNotifiedAt: parsed.lastNotifiedAt || null,
+          dismissedReminders: parsed.dismissedReminders || [],
           studyGroups: parsed.studyGroups || [
             {
               id: 'grp_aws',
@@ -109,6 +110,7 @@ class StateStore {
       generatedQuestions: {},
       notificationsEnabled: false,
       lastNotifiedAt: null,
+      dismissedReminders: [],
       studyGroups: [
         {
           id: 'grp_aws',
@@ -258,6 +260,13 @@ class StateStore {
   setLastNotifiedAt(dateStr) {
     this.state.lastNotifiedAt = dateStr;
     this.saveState();
+  }
+
+  dismissReminder(reminderId) {
+    if (!this.state.dismissedReminders.includes(reminderId)) {
+      this.state.dismissedReminders = [...this.state.dismissedReminders, reminderId];
+      this.saveState();
+    }
   }
 
   // --- Goals Management ---
@@ -522,6 +531,7 @@ class StateStore {
       generatedQuestions: {},
       notificationsEnabled: false,
       lastNotifiedAt: null,
+      dismissedReminders: [],
       studyGroups: [
         {
           id: 'grp_aws',

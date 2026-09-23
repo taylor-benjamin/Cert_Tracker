@@ -246,6 +246,10 @@ class CertTrackerApp {
     store.setLastNotifiedAt(todayStr);
   }
 
+  dismissReminder(reminderId) {
+    store.dismissReminder(reminderId);
+  }
+
   // ================= DASHBOARD VIEW (US-8 & KPI METRICS) =================
   renderDashboard() {
     const goals = store.state.goals;
@@ -254,7 +258,8 @@ class CertTrackerApp {
     const certs = store.state.certifications;
 
     // 1. Smart Reminders
-    const reminders = getSmartReminders(goals, sessions);
+    const dismissed = store.state.dismissedReminders || [];
+    const reminders = getSmartReminders(goals, sessions).filter(r => !dismissed.includes(r.id));
     const reminderContainer = document.getElementById('dashboard-reminders');
     if (reminderContainer) {
       if (reminders.length === 0) {
@@ -268,6 +273,7 @@ class CertTrackerApp {
               <p>${r.message}</p>
             </div>
             <button class="btn btn-sm btn-outline-light" onclick="window.certTrackerApp.openLogSessionModal('${r.goalId}')">Log Now</button>
+            <button class="btn-close reminder-dismiss" title="Dismiss" onclick="window.certTrackerApp.dismissReminder('${r.id}')">&times;</button>
           </div>
         `).join('');
       }
