@@ -6,7 +6,7 @@ export const DEFAULT_CERTIFICATIONS = [
     name: 'AWS Certified Solutions Architect – Associate',
     category: 'Cloud Computing',
     provider: 'Amazon Web Services',
-    icon: '☁️',
+    icon: 'cloud',
     color: '#FF9900',
     defaultTargetHours: 90,
     avgWeeksToCertify: 10,
@@ -32,7 +32,7 @@ export const DEFAULT_CERTIFICATIONS = [
     name: 'Project Management Professional (PMP)',
     category: 'Project Management',
     provider: 'Project Management Institute (PMI)',
-    icon: '📊',
+    icon: 'bar-chart',
     color: '#4F46E5',
     defaultTargetHours: 120,
     avgWeeksToCertify: 12,
@@ -57,7 +57,7 @@ export const DEFAULT_CERTIFICATIONS = [
     name: 'CompTIA Security+ (SY0-701)',
     category: 'Cybersecurity',
     provider: 'CompTIA',
-    icon: '🛡️',
+    icon: 'shield',
     color: '#EF4444',
     defaultTargetHours: 80,
     avgWeeksToCertify: 8,
@@ -83,7 +83,7 @@ export const DEFAULT_CERTIFICATIONS = [
     name: 'Certified Public Accountant (CPA) – Auditing & Attestation',
     category: 'Finance & Accounting',
     provider: 'AICPA / NASBA',
-    icon: '📈',
+    icon: 'trending-up',
     color: '#10B981',
     defaultTargetHours: 110,
     avgWeeksToCertify: 10,
@@ -108,7 +108,7 @@ export const DEFAULT_CERTIFICATIONS = [
     name: 'Microsoft Certified: Azure Solutions Architect Expert',
     category: 'Cloud Computing',
     provider: 'Microsoft',
-    icon: '⚡',
+    icon: 'zap',
     color: '#0284C7',
     defaultTargetHours: 85,
     avgWeeksToCertify: 9,
@@ -134,7 +134,7 @@ export const DEFAULT_BADGES = [
     id: 'first_session',
     name: 'First Step',
     description: 'Logged your very first study session.',
-    icon: '🌱',
+    icon: 'sprout',
     unlockedAt: null
   },
   {
@@ -148,49 +148,49 @@ export const DEFAULT_BADGES = [
     id: 'streak_7',
     name: 'Unstoppable Flame',
     description: 'Maintained a 7-day consecutive study streak.',
-    icon: '⚡',
+    icon: 'zap',
     unlockedAt: null
   },
   {
     id: 'hours_10',
     name: 'Dedicated Student',
     description: 'Completed 10 total hours of certification study.',
-    icon: '📖',
+    icon: 'book-open',
     unlockedAt: null
   },
   {
     id: 'hours_50',
     name: 'Deep Diver',
     description: 'Passed 50 hours of intensive study.',
-    icon: '🛡️',
+    icon: 'gauge',
     unlockedAt: null
   },
   {
     id: 'hours_100',
     name: 'Century Club',
     description: 'Hit 100 logged study hours across certifications!',
-    icon: '👑',
+    icon: 'crown',
     unlockedAt: null
   },
   {
     id: 'quiz_ace',
     name: 'Quiz Master',
     description: 'Scored 90% or higher on a practice quiz.',
-    icon: '🎯',
+    icon: 'target',
     unlockedAt: null
   },
   {
     id: 'exam_ready',
     name: 'Exam Ready',
     description: 'Achieved an overall exam-readiness score of 80% or above.',
-    icon: '🚀',
+    icon: 'rocket',
     unlockedAt: null
   },
   {
     id: 'first_pass',
     name: 'Certified Champion',
     description: 'Marked a certification goal as Passed/Completed!',
-    icon: '🏆',
+    icon: 'award',
     unlockedAt: null
   }
 ];
@@ -199,8 +199,7 @@ export const INITIAL_USER = {
   id: 'usr_demo',
   name: 'Alex Rivera',
   email: 'alex.rivera@example.com',
-  avatar: '👨‍💻',
-  avatarPhoto: null, // data URL of an uploaded profile photo, overrides the emoji avatar when set
+  avatarPhoto: null, // data URL of an uploaded profile photo, overrides the initials avatar when set
   role: 'member',
   joinedDate: '2026-08-15',
   credlyUsername: null,
@@ -212,10 +211,10 @@ export const INITIAL_USER = {
 // Sample peers for the Community "Follow Friends" feature
 export function getInitialFriends() {
   return [
-    { id: 'frnd_1', name: 'Elena Rostova', avatar: '👩‍🔬', certName: 'AWS Certified Solutions Architect', streak: 12, hoursThisWeek: 6.5, following: true },
-    { id: 'frnd_2', name: 'Marcus Vance', avatar: '👨‍💼', certName: 'Project Management Professional (PMP)', streak: 4, hoursThisWeek: 3.0, following: true },
-    { id: 'frnd_3', name: 'Samantha Wu', avatar: '👩‍💻', certName: 'CompTIA Security+ (SY0-701)', streak: 21, hoursThisWeek: 9.0, following: false },
-    { id: 'frnd_4', name: 'Devon Reed', avatar: '🧑‍💻', certName: 'AWS Certified Solutions Architect – Associate', streak: 0, hoursThisWeek: 0, following: false }
+    { id: 'frnd_1', name: 'Elena Rostova', certName: 'AWS Certified Solutions Architect', streak: 12, hoursThisWeek: 6.5, following: true },
+    { id: 'frnd_2', name: 'Marcus Vance', certName: 'Project Management Professional (PMP)', streak: 4, hoursThisWeek: 3.0, following: true },
+    { id: 'frnd_3', name: 'Samantha Wu', certName: 'CompTIA Security+ (SY0-701)', streak: 21, hoursThisWeek: 9.0, following: false },
+    { id: 'frnd_4', name: 'Devon Reed', certName: 'AWS Certified Solutions Architect – Associate', streak: 0, hoursThisWeek: 0, following: false }
   ];
 }
 

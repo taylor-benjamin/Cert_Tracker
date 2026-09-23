@@ -1,6 +1,7 @@
 // Community, Study Groups & Progress Sharing Card Generator
 import { store } from './state.js';
 import { calculateStudyHours } from './analytics.js';
+import { icon, initialsAvatar } from './icons.js';
 
 export function renderCommunityView(containerId) {
   const container = document.getElementById(this?.containerId || containerId);
@@ -20,10 +21,10 @@ export function renderCommunityView(containerId) {
         <div class="card mb-3">
           <div class="card-header-flex">
             <div>
-              <h3>👥 Certification Study Groups</h3>
+              <h3>${icon('users', { size: 18 })} Certification Study Groups</h3>
               <p class="text-muted text-sm">Join peers studying for the exact same target certification</p>
             </div>
-            <button class="btn btn-secondary btn-sm" id="btn-share-progress">✨ Share My Progress Card</button>
+            <button class="btn btn-secondary btn-sm" id="btn-share-progress">${icon('sparkles', { size: 14, className: 'icon-sm' })} Share My Progress Card</button>
           </div>
 
           <div class="study-groups-list mt-3">
@@ -34,16 +35,16 @@ export function renderCommunityView(containerId) {
                 <div class="group-info">
                   <div class="group-title-row">
                     <h4 class="group-name">${grp.name}</h4>
-                    <span class="badge badge-success">🟢 ${grp.activeNow} active now</span>
+                    <span class="badge badge-success"><span class="live-dot"></span> ${grp.activeNow} active now</span>
                   </div>
                   <p class="group-desc">${grp.description}</p>
                   <div class="group-meta">
-                    <span>👥 ${grp.membersCount} members</span>
+                    <span>${icon('users', { size: 13, className: 'icon-sm' })} ${grp.membersCount} members</span>
                     <span class="mx-2">•</span>
-                    <span>💬 Active study room</span>
+                    <span>${icon('message-circle', { size: 13, className: 'icon-sm' })} Active study room</span>
                     ${grpCert?.subreddit ? `
                       <span class="mx-2">•</span>
-                      <a href="https://reddit.com/${grpCert.subreddit}" target="_blank" rel="noopener noreferrer" class="subreddit-link">👽 ${grpCert.subreddit}</a>
+                      <a href="https://reddit.com/${grpCert.subreddit}" target="_blank" rel="noopener noreferrer" class="subreddit-link">${icon('external-link', { size: 13, className: 'icon-sm' })} ${grpCert.subreddit}</a>
                     ` : ''}
                   </div>
                 </div>
@@ -60,7 +61,7 @@ export function renderCommunityView(containerId) {
         <div class="card mt-3">
           <div class="card-header-flex">
             <div>
-              <h3>🤝 Friends</h3>
+              <h3>${icon('users', { size: 18 })} Friends</h3>
               <p class="text-muted text-sm">Follow peers to see their streaks and study pace in your feed</p>
             </div>
           </div>
@@ -70,7 +71,7 @@ export function renderCommunityView(containerId) {
             ` : friends.map(f => `
               <div class="friend-row">
                 <div class="friend-info">
-                  <span class="peer-avatar">${f.avatar}</span>
+                  <span class="peer-avatar">${initialsAvatar(f.name, { size: 36 })}</span>
                   <div>
                     <div class="font-bold">${f.name}</div>
                     <div class="text-muted text-xs">${f.certName} • 🔥 ${f.streak}d streak • ${f.hoursThisWeek}h this week</div>
@@ -88,15 +89,15 @@ export function renderCommunityView(containerId) {
         <div class="card">
           <div class="card-header-flex">
             <div>
-              <h4>🔥 Live Peer Activity Feed</h4>
+              <h4>${icon('zap', { size: 16, className: 'icon-sm' })} Live Peer Activity Feed</h4>
               <p class="text-muted text-sm">Real-time study milestones from candidates worldwide</p>
             </div>
-            <span class="live-dot-pulse">● Live</span>
+            <span class="live-dot-pulse"><span class="live-dot"></span> Live</span>
           </div>
 
           <div class="peer-feed-list mt-3">
             <div class="peer-feed-item">
-              <div class="peer-avatar">👩‍🔬</div>
+              <div class="peer-avatar">${initialsAvatar('Elena Rostova', { size: 32 })}</div>
               <div class="peer-details">
                 <div class="peer-text"><strong>Elena Rostova</strong> logged 2.5 hours on <em>AWS SAA-C03: Decoupled Microservices with SQS & SNS</em></div>
                 <div class="peer-time">12 minutes ago</div>
@@ -104,15 +105,15 @@ export function renderCommunityView(containerId) {
             </div>
 
             <div class="peer-feed-item">
-              <div class="peer-avatar">👨‍💼</div>
+              <div class="peer-avatar">${initialsAvatar('Marcus Vance', { size: 32 })}</div>
               <div class="peer-details">
-                <div class="peer-text"><strong>Marcus Vance</strong> scored <strong>92%</strong> on <em>PMP Agile Practice Exam</em> 🎉</div>
+                <div class="peer-text"><strong>Marcus Vance</strong> scored <strong>92%</strong> on <em>PMP Agile Practice Exam</em></div>
                 <div class="peer-time">34 minutes ago</div>
               </div>
             </div>
 
             <div class="peer-feed-item">
-              <div class="peer-avatar">👩‍💻</div>
+              <div class="peer-avatar">${initialsAvatar('Samantha Wu', { size: 32 })}</div>
               <div class="peer-details">
                 <div class="peer-text"><strong>Samantha Wu</strong> unlocked <strong>Century Club (100h)</strong> badge on <em>CompTIA Security+</em>!</div>
                 <div class="peer-time">1 hour ago</div>
@@ -120,9 +121,9 @@ export function renderCommunityView(containerId) {
             </div>
 
             <div class="peer-feed-item">
-              <div class="peer-avatar">🧑‍💻</div>
+              <div class="peer-avatar">${initialsAvatar('Devon Reed', { size: 32 })}</div>
               <div class="peer-details">
-                <div class="peer-text"><strong>Devon Reed</strong> marked <strong>AWS Solutions Architect – Associate</strong> as <strong>PASSED 🏆</strong></div>
+                <div class="peer-text"><strong>Devon Reed</strong> marked <strong>AWS Solutions Architect – Associate</strong> as <strong>PASSED</strong></div>
                 <div class="peer-time">2 hours ago</div>
               </div>
             </div>
@@ -134,7 +135,7 @@ export function renderCommunityView(containerId) {
       <div class="community-sidebar">
         <div class="card focus-room-card mb-3">
           <div class="focus-room-header">
-            <h4>⏱️ Pomodoro Focus Timer</h4>
+            <h4>${icon('clock', { size: 16, className: 'icon-sm' })} Pomodoro Focus Timer</h4>
             <span class="badge badge-accent">Silent Co-Working</span>
           </div>
           <p class="text-muted text-sm mt-1">Study alongside 39 other candidates currently in focus mode.</p>
@@ -150,12 +151,12 @@ export function renderCommunityView(containerId) {
 
         <!-- Milestones & Badges Summary -->
         <div class="card">
-          <h4>🏆 My Milestone Badges</h4>
+          <h4>${icon('award', { size: 16, className: 'icon-sm' })} My Milestone Badges</h4>
           <p class="text-muted text-sm mb-3">Earned through consistent study and quiz mastery</p>
           <div class="badges-grid-compact">
             ${store.state.badges.map(b => `
               <div class="badge-item ${b.unlockedAt ? 'badge-unlocked' : 'badge-locked'}" title="${b.description}">
-                <div class="badge-icon-lg">${b.icon}</div>
+                <div class="badge-icon-lg">${b.icon === '🔥' ? '🔥' : icon(b.icon, { size: 24 })}</div>
                 <div class="badge-name">${b.name}</div>
                 <div class="badge-status">${b.unlockedAt ? `Unlocked ${b.unlockedAt}` : 'Locked'}</div>
               </div>
@@ -169,7 +170,7 @@ export function renderCommunityView(containerId) {
   // Attach group entry
   container.querySelectorAll('.btn-join-group').forEach(btn => {
     btn.addEventListener('click', () => {
-      window.certTrackerApp?.showToast('Joined active study room. Focus mode activated! 🎧', 'success');
+      window.certTrackerApp?.showToast('Joined active study room. Focus mode activated!', 'success');
     });
   });
 
@@ -218,7 +219,7 @@ function setupPomodoroTimer(container) {
         } else {
           clearInterval(timerInterval);
           timerInterval = null;
-          alert('🎉 25-minute Pomodoro session completed! Take a 5-minute break.');
+          alert('25-minute Pomodoro session completed! Take a 5-minute break.');
           secondsLeft = 25 * 60;
           updateDisplay();
           startBtn.textContent = 'Start 25m Focus';
@@ -246,17 +247,17 @@ export function openShareModal(user, totalHours, streak) {
     <div class="modal-overlay show" id="share-modal">
       <div class="modal-content modal-md">
         <div class="modal-header">
-          <h3>✨ Share Your Progress</h3>
+          <h3>${icon('sparkles', { size: 18 })} Share Your Progress</h3>
           <button class="btn-close" id="btn-close-share">&times;</button>
         </div>
         <div class="modal-body">
           <div class="share-card-preview" id="share-card-target">
             <div class="share-card-brand">
-              <span class="share-brand-logo">⚡ CertTracker</span>
+              <span class="share-brand-logo">CertTracker</span>
               <span class="share-badge-pill">Study Certified</span>
             </div>
             <div class="share-user-row">
-              <span class="share-avatar">${user.avatar || '👨‍💻'}</span>
+              <span class="share-avatar">${initialsAvatar(user.name || 'You', { size: 44 })}</span>
               <div>
                 <h3 class="share-user-name">${user.name}</h3>
                 <span class="share-target-cert">Targeting: ${primaryCert}</span>
@@ -272,7 +273,7 @@ export function openShareModal(user, totalHours, streak) {
                 <span class="share-stat-lbl">Day Streak</span>
               </div>
               <div class="share-stat-col">
-                <span class="share-stat-num">🏆 ${unlockedBadges}</span>
+                <span class="share-stat-num">${icon('award', { size: 18 })} ${unlockedBadges}</span>
                 <span class="share-stat-lbl">Badges</span>
               </div>
             </div>
@@ -282,7 +283,7 @@ export function openShareModal(user, totalHours, streak) {
           </div>
 
           <div class="mt-3 text-center">
-            <button class="btn btn-primary" id="btn-copy-share-text">📋 Copy Shareable Text</button>
+            <button class="btn btn-primary" id="btn-copy-share-text">${icon('copy', { size: 14, className: 'icon-sm' })} Copy Shareable Text</button>
             <button class="btn btn-secondary ml-2" id="btn-share-toast">Share to Study Group</button>
           </div>
         </div>
@@ -298,7 +299,7 @@ export function openShareModal(user, totalHours, streak) {
   modal.querySelector('#btn-close-share').addEventListener('click', () => modal.remove());
 
   modal.querySelector('#btn-copy-share-text').addEventListener('click', () => {
-    const text = `🎯 I've logged ${totalHours} hours and have a ${streak}-day study streak on CertTracker for ${primaryCert}! Consistent daily progress. #CertTracker #StudyStreak`;
+    const text = `I've logged ${totalHours} hours and have a ${streak}-day study streak on CertTracker for ${primaryCert}! Consistent daily progress. #CertTracker #StudyStreak`;
     navigator.clipboard?.writeText(text).then(() => {
       window.certTrackerApp?.showToast('Copied progress summary to clipboard!', 'success');
     }).catch(() => {
@@ -308,6 +309,6 @@ export function openShareModal(user, totalHours, streak) {
 
   modal.querySelector('#btn-share-toast').addEventListener('click', () => {
     modal.remove();
-    window.certTrackerApp?.showToast('Progress posted to your study group feed! 🎉', 'success');
+    window.certTrackerApp?.showToast('Progress posted to your study group feed!', 'success');
   });
 }

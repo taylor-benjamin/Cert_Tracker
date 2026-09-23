@@ -1,5 +1,6 @@
 // Study Sessions Management: Filtering, Search, Modals & CSV/Print Exports
 import { store } from './state.js';
+import { icon } from './icons.js';
 
 export class SessionsManager {
   constructor(containerId) {
@@ -118,8 +119,8 @@ export class SessionsManager {
 
           <div class="btn-group">
             <button class="btn btn-secondary btn-sm" id="btn-reset-filters">Reset Filters</button>
-            <button class="btn btn-secondary btn-sm" id="btn-export-csv">📥 Export CSV</button>
-            <button class="btn btn-secondary btn-sm" id="btn-print-report">🖨️ Print Report</button>
+            <button class="btn btn-secondary btn-sm" id="btn-export-csv">${icon('download', { size: 14, className: 'icon-sm' })} Export CSV</button>
+            <button class="btn btn-secondary btn-sm" id="btn-print-report">${icon('printer', { size: 14, className: 'icon-sm' })} Print Report</button>
             <button class="btn btn-primary btn-sm" id="btn-log-session">+ Log Study Session</button>
           </div>
         </div>
@@ -128,7 +129,7 @@ export class SessionsManager {
       <div class="sessions-table-card card">
         ${filtered.length === 0 ? `
           <div class="empty-state p-4">
-            <div class="empty-icon">📝</div>
+            <div class="empty-icon">${icon('file-text', { size: 40 })}</div>
             <h4>No Study Sessions Found</h4>
             <p class="text-muted">Try adjusting your search criteria or log your latest study session.</p>
           </div>
@@ -169,8 +170,8 @@ export class SessionsManager {
                         <span class="method-tag">${sess.method || 'Self-Study'}</span>
                       </td>
                       <td style="text-align: right;" class="text-nowrap">
-                        <button class="btn-icon btn-sm" title="Edit Session" data-action="edit-session" data-session-id="${sess.id}">✏️</button>
-                        <button class="btn-icon btn-sm text-danger" title="Delete Session" data-action="delete-session" data-session-id="${sess.id}">🗑️</button>
+                        <button class="btn-icon btn-sm" title="Edit Session" data-action="edit-session" data-session-id="${sess.id}">${icon('edit-2', { size: 14 })}</button>
+                        <button class="btn-icon btn-sm text-danger" title="Delete Session" data-action="delete-session" data-session-id="${sess.id}">${icon('trash-2', { size: 14 })}</button>
                       </td>
                     </tr>
                   `;

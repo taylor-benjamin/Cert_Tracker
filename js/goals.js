@@ -1,6 +1,7 @@
 // Goals Management: CRUD, Progress Bars, Resource Attachments & Status Toggles
 import { store } from './state.js';
 import { calculateStudyHours, calculateExamReadiness } from './analytics.js';
+import { icon } from './icons.js';
 
 export function renderGoalCards(containerId) {
   const container = document.getElementById(containerId);
@@ -14,7 +15,7 @@ export function renderGoalCards(containerId) {
   if (goals.length === 0) {
     container.innerHTML = `
       <div class="empty-state card">
-        <div class="empty-icon">🎯</div>
+        <div class="empty-icon">${icon('target', { size: 40 })}</div>
         <h3>No Certification Goals Yet</h3>
         <p class="text-muted">Set up your first certification target and start tracking study hours and readiness!</p>
         <button class="btn btn-primary mt-3" id="btn-empty-add-goal">+ Create Certification Goal</button>
@@ -30,8 +31,8 @@ export function renderGoalCards(containerId) {
     const cert = certifications.find(c => c.id === goal.certId) || {
       name: goal.certName,
       code: goal.certCode,
-      color: '#6366f1',
-      icon: '📜'
+      color: '#16a34a',
+      icon: 'graduation-cap'
     };
 
     const { totalHours } = calculateStudyHours(sessions, goal.id);
@@ -48,9 +49,9 @@ export function renderGoalCards(containerId) {
       const diffDays = Math.ceil((examDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
 
       if (diffDays > 0) {
-        daysBadge = `<span class="badge ${diffDays <= 14 ? 'badge-danger' : 'badge-info'}">⏳ ${diffDays} days left</span>`;
+        daysBadge = `<span class="badge ${diffDays <= 14 ? 'badge-danger' : 'badge-info'}">${icon('clock', { size: 12, className: 'icon-sm' })} ${diffDays} days left</span>`;
       } else if (diffDays === 0) {
-        daysBadge = `<span class="badge badge-warning">🎯 Exam is Today!</span>`;
+        daysBadge = `<span class="badge badge-warning">${icon('target', { size: 12, className: 'icon-sm' })} Exam is Today!</span>`;
       } else {
         daysBadge = `<span class="badge badge-secondary">Past Exam Date</span>`;
       }
@@ -66,9 +67,9 @@ export function renderGoalCards(containerId) {
       const expiryDate = new Date(goal.certExpiryDate + 'T00:00:00');
       const diffDays = Math.ceil((expiryDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
       if (diffDays < 0) {
-        expiryBadge = `<span class="badge badge-danger" title="Renewal deadline was ${goal.certExpiryDate}">⚠️ Expired</span>`;
+        expiryBadge = `<span class="badge badge-danger" title="Renewal deadline was ${goal.certExpiryDate}">${icon('alert-triangle', { size: 12, className: 'icon-sm' })} Expired</span>`;
       } else if (diffDays <= 90) {
-        expiryBadge = `<span class="badge badge-warning" title="Renew by ${goal.certExpiryDate}">⏳ Expires in ${diffDays}d</span>`;
+        expiryBadge = `<span class="badge badge-warning" title="Renew by ${goal.certExpiryDate}">${icon('clock', { size: 12, className: 'icon-sm' })} Expires in ${diffDays}d</span>`;
       }
     }
 
@@ -76,7 +77,6 @@ export function renderGoalCards(containerId) {
       <div class="goal-card card ${isPassed ? 'goal-card-passed' : ''}" data-goal-id="${goal.id}">
         <div class="goal-card-header">
           <div class="goal-cert-badge">
-            <span class="cert-icon">${cert.icon || '🎓'}</span>
             <div>
               <h3 class="goal-title">${goal.certName || cert.name}</h3>
               <span class="cert-code">${goal.certCode || cert.code}</span>
@@ -84,19 +84,19 @@ export function renderGoalCards(containerId) {
           </div>
           <div class="goal-badges-group">
             ${isPassed
-              ? `<span class="badge badge-success">🏆 PASSED</span>${expiryBadge}`
-              : `<span class="badge badge-info">🔄 In Progress</span>${daysBadge}`
+              ? `<span class="badge badge-success">${icon('award', { size: 12, className: 'icon-sm' })} PASSED</span>${expiryBadge}`
+              : `<span class="badge badge-info">${icon('refresh', { size: 12, className: 'icon-sm' })} In Progress</span>${daysBadge}`
             }
             <div class="dropdown">
               <button class="btn-icon" title="Goal Options" data-action="goal-menu">&#8942;</button>
               <div class="dropdown-menu">
-                <button class="dropdown-item" data-action="edit-goal" data-goal-id="${goal.id}">✏️ Edit Goal</button>
-                <button class="dropdown-item" data-action="manage-resources" data-goal-id="${goal.id}">📎 Manage Resources (${goal.resources?.length || 0})</button>
-                ${!isPassed 
-                  ? `<button class="dropdown-item text-success" data-action="mark-passed" data-goal-id="${goal.id}">🏆 Mark as Passed</button>`
-                  : `<button class="dropdown-item" data-action="mark-in-progress" data-goal-id="${goal.id}">🔄 Resume In Progress</button>`
+                <button class="dropdown-item" data-action="edit-goal" data-goal-id="${goal.id}">${icon('edit-2', { size: 14, className: 'icon-sm' })} Edit Goal</button>
+                <button class="dropdown-item" data-action="manage-resources" data-goal-id="${goal.id}">${icon('paperclip', { size: 14, className: 'icon-sm' })} Manage Resources (${goal.resources?.length || 0})</button>
+                ${!isPassed
+                  ? `<button class="dropdown-item text-success" data-action="mark-passed" data-goal-id="${goal.id}">${icon('award', { size: 14, className: 'icon-sm' })} Mark as Passed</button>`
+                  : `<button class="dropdown-item" data-action="mark-in-progress" data-goal-id="${goal.id}">${icon('refresh', { size: 14, className: 'icon-sm' })} Resume In Progress</button>`
                 }
-                <button class="dropdown-item text-danger" data-action="delete-goal" data-goal-id="${goal.id}">🗑️ Delete Goal</button>
+                <button class="dropdown-item text-danger" data-action="delete-goal" data-goal-id="${goal.id}">${icon('trash-2', { size: 14, className: 'icon-sm' })} Delete Goal</button>
               </div>
             </div>
           </div>
@@ -108,7 +108,7 @@ export function renderGoalCards(containerId) {
             <span class="progress-percentage font-bold">${progressPercent}%</span>
           </div>
           <div class="progress-bar-bg">
-            <div class="progress-bar-fill" style="width: ${progressPercent}%; background: linear-gradient(90deg, ${cert.color || '#6366f1'}, #06b6d4);"></div>
+            <div class="progress-bar-fill" style="width: ${progressPercent}%; background: linear-gradient(90deg, ${cert.color || '#16a34a'}, #84cc16);"></div>
           </div>
         </div>
 
@@ -136,7 +136,7 @@ export function renderGoalCards(containerId) {
 
         <div class="goal-card-footer">
           <div class="goal-resources-summary">
-            <span>📎 ${goal.resources?.length || 0} attached resource(s)</span>
+            <span>${icon('paperclip', { size: 13, className: 'icon-sm' })} ${goal.resources?.length || 0} attached resource(s)</span>
           </div>
           <div class="goal-actions-btns">
             <button class="btn btn-secondary btn-sm" data-action="quick-log-session" data-goal-id="${goal.id}">+ Log Hours</button>
@@ -184,7 +184,7 @@ function attachGoalCardListeners(container) {
     btn.addEventListener('click', () => {
       const goalId = btn.getAttribute('data-goal-id');
       store.markGoalStatus(goalId, 'passed');
-      window.certTrackerApp?.showToast('🎉 Congratulations on passing your certification!', 'success');
+      window.certTrackerApp?.showToast('Congratulations on passing your certification!', 'success');
       window.certTrackerApp?.renderAll();
     });
   });

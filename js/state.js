@@ -28,7 +28,7 @@ class StateStore {
         return {
           user: parsed.user || INITIAL_USER,
           isLoggedIn: parsed.isLoggedIn !== undefined ? parsed.isLoggedIn : true,
-          theme: parsed.theme || 'dark',
+          theme: parsed.theme || 'light',
           certifications: parsed.certifications || DEFAULT_CERTIFICATIONS,
           goals: parsed.goals || getInitialGoals(),
           sessions: parsed.sessions || getInitialSessions(),
@@ -86,7 +86,7 @@ class StateStore {
     return {
       user: INITIAL_USER,
       isLoggedIn: true,
-      theme: 'dark',
+      theme: 'light',
       certifications: DEFAULT_CERTIFICATIONS,
       goals: getInitialGoals(),
       sessions: getInitialSessions(),
@@ -499,7 +499,7 @@ class StateStore {
     this.state = {
       user: INITIAL_USER,
       isLoggedIn: true,
-      theme: 'dark',
+      theme: 'light',
       certifications: DEFAULT_CERTIFICATIONS,
       goals: getInitialGoals(),
       sessions: getInitialSessions(),

@@ -16,6 +16,7 @@ import {
   getExamPrepTip,
   buildTimelineEvents
 } from './analytics.js';
+import { icon, initialsAvatar } from './icons.js';
 
 class CertTrackerApp {
   constructor() {
@@ -37,15 +38,31 @@ class CertTrackerApp {
     // Setup global listeners
     this.setupNavigation();
     this.setupHeaderControls();
+    this.setupSidebarCollapse();
     this.setupChatbot();
     this.renderAll();
+  }
+
+  setupSidebarCollapse() {
+    const shell = document.getElementById('app-shell');
+    const btn = document.getElementById('btn-sidebar-collapse');
+    if (!shell || !btn) return;
+
+    if (localStorage.getItem('certtracker_sidebar_collapsed') === '1') {
+      shell.classList.add('sidebar-collapsed');
+    }
+
+    btn.addEventListener('click', () => {
+      const collapsed = shell.classList.toggle('sidebar-collapsed');
+      localStorage.setItem('certtracker_sidebar_collapsed', collapsed ? '1' : '0');
+    });
   }
 
   applyTheme(theme) {
     document.documentElement.setAttribute('data-theme', theme);
     const themeBtn = document.getElementById('theme-toggle-btn');
     if (themeBtn) {
-      themeBtn.innerHTML = theme === 'dark' ? '☀️' : '🌙';
+      themeBtn.innerHTML = theme === 'dark' ? icon('sun', { size: 17 }) : icon('moon', { size: 17 });
       themeBtn.title = theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode';
     }
   }
@@ -170,13 +187,13 @@ class CertTrackerApp {
         const u = store.state.user || {};
         const avatarHtml = u.avatarPhoto
           ? `<img src="${u.avatarPhoto}" class="user-avatar-photo" alt="">`
-          : `<span class="user-avatar">${u.avatar || '👨‍💻'}</span>`;
+          : `<span class="user-avatar">${initialsAvatar(u.name || 'Account', { size: 22 })}</span>`;
         userBtn.innerHTML = `
           ${avatarHtml}
           <span class="user-name-text">${u.name || 'Account'}</span>
         `;
       } else {
-        userBtn.innerHTML = `<span>🔑 Log In</span>`;
+        userBtn.innerHTML = `${icon('log-in', { size: 14, className: 'icon-sm' })} <span>Log In</span>`;
       }
     }
   }
@@ -198,7 +215,7 @@ class CertTrackerApp {
     const permission = await Notification.requestPermission();
     if (permission === 'granted') {
       store.setNotificationsEnabled(true);
-      this.showToast('🔔 Push reminders enabled for exam dates & renewal deadlines.', 'success');
+      this.showToast('Push reminders enabled for exam dates & renewal deadlines.', 'success');
       new Notification('CertTracker Reminders Enabled', {
         body: 'You\'ll be notified as exam dates and certification renewals approach.'
       });
@@ -245,7 +262,7 @@ class CertTrackerApp {
       } else {
         reminderContainer.innerHTML = reminders.map(r => `
           <div class="reminder-banner reminder-${r.type}">
-            <span class="reminder-icon">${r.icon}</span>
+            <span class="reminder-icon">${icon(r.icon, { size: 22 })}</span>
             <div class="reminder-body">
               <strong>${r.title}</strong>
               <p>${r.message}</p>
@@ -277,7 +294,7 @@ class CertTrackerApp {
     if (metricsContainer) {
       metricsContainer.innerHTML = `
         <div class="kpi-card card">
-          <div class="kpi-icon-wrap bg-primary-soft">⏱️</div>
+          <div class="kpi-icon-wrap bg-primary-soft">${icon('clock', { size: 22 })}</div>
           <div class="kpi-info">
             <span class="kpi-label">Total Study Hours</span>
             <h3 class="kpi-value">${totalHours}h</h3>
@@ -286,7 +303,7 @@ class CertTrackerApp {
         </div>
 
         <div class="kpi-card card">
-          <div class="kpi-icon-wrap bg-accent-soft">🎯</div>
+          <div class="kpi-icon-wrap bg-accent-soft">${icon('target', { size: 22 })}</div>
           <div class="kpi-info">
             <span class="kpi-label">Active Cert Goals</span>
             <h3 class="kpi-value">${activeGoals.length}</h3>
@@ -299,12 +316,12 @@ class CertTrackerApp {
           <div class="kpi-info">
             <span class="kpi-label">Current Streak</span>
             <h3 class="kpi-value">${streak} Days</h3>
-            <span class="kpi-subtext text-muted">${streak >= 7 ? '⚡ Unstoppable flame!' : 'Study daily to boost'}</span>
+            <span class="kpi-subtext text-muted">${streak >= 7 ? 'Unstoppable flame!' : 'Study daily to boost'}</span>
           </div>
         </div>
 
         <div class="kpi-card card">
-          <div class="kpi-icon-wrap bg-success-soft">🚀</div>
+          <div class="kpi-icon-wrap bg-success-soft">${icon('rocket', { size: 22 })}</div>
           <div class="kpi-info">
             <span class="kpi-label">Overall Readiness</span>
             <h3 class="kpi-value">${avgReadiness}%</h3>
@@ -328,12 +345,12 @@ class CertTrackerApp {
       } else {
         timelineContainer.innerHTML = `
           <div class="card timeline-card">
-            <h4>🗓️ Timeline &amp; AI Exam Prep Guidance</h4>
+            <h4>${icon('calendar', { size: 17 })} Timeline &amp; AI Exam Prep Guidance</h4>
             <p class="text-muted text-sm">Upcoming exam dates and certification renewal deadlines, with pacing tips</p>
             <div class="timeline-list mt-3">
               ${events.slice(0, 6).map(evt => `
                 <div class="timeline-item ${evt.daysAway <= 14 ? 'timeline-item-urgent' : ''}">
-                  <div class="timeline-icon">${evt.icon}</div>
+                  <div class="timeline-icon">${icon(evt.icon, { size: 20 })}</div>
                   <div class="timeline-body">
                     <div class="timeline-top-row">
                       <strong>${evt.label}</strong>
@@ -342,7 +359,7 @@ class CertTrackerApp {
                       </span>
                     </div>
                     <div class="text-muted text-xs">${evt.date} &bull; ${evt.prep.phase}</div>
-                    <div class="timeline-tip">🤖 ${evt.prep.tip}</div>
+                    <div class="timeline-tip">${icon('sparkles', { size: 14, className: 'icon-sm' })} ${evt.prep.tip}</div>
                   </div>
                 </div>
               `).join('')}
@@ -364,7 +381,7 @@ class CertTrackerApp {
           <div class="card benchmark-card">
             <div class="card-header-flex">
               <div>
-                <h4>📊 Certification Pace vs. Industry Benchmark</h4>
+                <h4>${icon('bar-chart', { size: 17 })} Certification Pace vs. Industry Benchmark</h4>
                 <p class="text-muted text-sm">${benchmark.certName}</p>
               </div>
               <span class="badge ${benchmark.badgeClass}">${benchmark.assessment}</span>
@@ -397,7 +414,7 @@ class CertTrackerApp {
           <div class="card suggested-card">
             <div class="card-header-flex">
               <div>
-                <h4>💡 Curated Study Resources for ${firstCert.name}</h4>
+                <h4>${icon('lightbulb', { size: 17 })} Curated Study Resources for ${firstCert.name}</h4>
                 <p class="text-muted text-sm">Recommended materials to accelerate your test readiness</p>
               </div>
               <button class="btn btn-secondary btn-sm" onclick="window.certTrackerApp.openSuggestedResourcesModal('${firstCert.id}')">View All Resources</button>
@@ -436,7 +453,7 @@ class CertTrackerApp {
       <div class="quiz-launcher-grid">
         <!-- Start Quiz Card -->
         <div class="card quiz-start-card">
-          <div class="quiz-badge-icon">🧠</div>
+          <div class="quiz-badge-icon">${icon('brain', { size: 30 })}</div>
           <h3>Interactive Practice Quiz</h3>
           <p class="text-muted mb-3">Test your knowledge with real certification exam scenario questions and receive immediate rationales.</p>
 
@@ -458,15 +475,15 @@ class CertTrackerApp {
             </select>
           </div>
 
-          <button class="btn btn-primary w-100 mt-3" id="btn-start-quiz-now">🚀 Begin 5-Question Quiz</button>
-          <button class="btn btn-secondary w-100 mt-2" id="btn-generate-quiz-questions">✨ Generate More Questions (AI)</button>
+          <button class="btn btn-primary w-100 mt-3" id="btn-start-quiz-now">${icon('rocket', { size: 15, className: 'icon-sm' })} Begin 5-Question Quiz</button>
+          <button class="btn btn-secondary w-100 mt-2" id="btn-generate-quiz-questions">${icon('sparkles', { size: 15, className: 'icon-sm' })} Generate More Questions (AI)</button>
           <p class="text-muted text-xs mt-1">Expands the question bank for the selected certification using an AI-style generator.</p>
         </div>
 
         <!-- Quiz History & Score Progression (Feature 18) -->
         <div class="card quiz-history-card">
           <div class="card-header-flex">
-            <h4>📈 Quiz Score History</h4>
+            <h4>${icon('trending-up', { size: 17 })} Quiz Score History</h4>
             <span class="badge badge-secondary">${quizHistory.length} attempts recorded</span>
           </div>
           <p class="text-muted text-sm">Track your score trajectory over time</p>
@@ -523,7 +540,7 @@ class CertTrackerApp {
       const certId = document.getElementById('quiz-select-cert').value;
       const domain = document.getElementById('quiz-select-domain').value;
       const generated = quizManager.generateQuestionsForCert(certId, domain === 'all' ? null : domain);
-      this.showToast(`✨ Generated ${generated.length} new AI question(s) for the bank!`, 'success');
+      this.showToast(`Generated ${generated.length} new AI question(s) for the bank!`, 'success');
       this.renderQuizView(certId);
     });
   }
@@ -609,7 +626,7 @@ class CertTrackerApp {
     container.innerHTML = `
       <div class="card quiz-results-card">
         <div class="results-header-box text-center">
-          <div class="results-emoji">${results.passed ? '🎉' : '📚'}</div>
+          <div class="results-emoji">${icon(results.passed ? 'award' : 'book-open', { size: 42 })}</div>
           <h2>Quiz Completed!</h2>
           <p class="text-muted">${results.certName}</p>
 
@@ -965,7 +982,7 @@ class CertTrackerApp {
         <div class="modal-content modal-md">
           <div class="modal-header">
             <div>
-              <h3>📎 Attached Study Resources</h3>
+              <h3>${icon('paperclip', { size: 18 })} Attached Study Resources</h3>
               <p class="text-muted text-xs">${goal.certName}</p>
             </div>
             <button class="btn-close" id="btn-close-res-modal">&times;</button>
@@ -1003,7 +1020,7 @@ class CertTrackerApp {
                     <span class="badge badge-secondary">${r.type || 'Link'}</span>
                     <a href="${r.url}" target="_blank" rel="noopener noreferrer" class="res-title-link font-bold">${r.title}</a>
                   </div>
-                  <button class="btn-icon btn-sm text-danger" data-action="delete-resource" data-res-id="${r.id}" title="Remove">🗑️</button>
+                  <button class="btn-icon btn-sm text-danger" data-action="delete-resource" data-res-id="${r.id}" title="Remove">${icon('trash-2', { size: 15 })}</button>
                 </div>
               `).join('')}
             </div>
@@ -1053,7 +1070,7 @@ class CertTrackerApp {
         <div class="modal-content modal-md">
           <div class="modal-header">
             <div>
-              <h3>💡 Curated Resources: ${cert.name}</h3>
+              <h3>${icon('lightbulb', { size: 18 })} Curated Resources: ${cert.name}</h3>
               <p class="text-muted text-xs">${cert.provider} • Target: ${cert.defaultTargetHours} study hours</p>
             </div>
             <button class="btn-close" id="btn-close-sugg-modal">&times;</button>
@@ -1091,7 +1108,7 @@ class CertTrackerApp {
         <div class="modal-content modal-md">
           <div class="modal-header">
             <div>
-              <h3>🧭 Let's Build Your Career Roadmap</h3>
+              <h3>${icon('compass', { size: 18 })} Let's Build Your Career Roadmap</h3>
               <p class="text-muted text-sm">Answer a few quick questions so we can personalize your dashboard and suggest a starter goal.</p>
             </div>
             <button class="btn-close" id="btn-close-onboarding">&times;</button>
@@ -1178,9 +1195,9 @@ class CertTrackerApp {
           weeklyHourTarget: hoursPerWeek,
           notes: `Auto-suggested starter goal based on your ${careerPath} career roadmap (${experience} level).`
         });
-        this.showToast(`🧭 Roadmap ready! Created a starter goal for ${cert.code}.`, 'success');
+        this.showToast(`Roadmap ready! Created a starter goal for ${cert.code}.`, 'success');
       } else {
-        this.showToast('🧭 Career roadmap saved!', 'success');
+        this.showToast('Career roadmap saved!', 'success');
       }
 
       finishOnboarding({ careerPath, experience, hoursPerWeek, starterCertId });
@@ -1192,27 +1209,27 @@ class CertTrackerApp {
       <div class="modal-overlay show" id="data-sync-modal">
         <div class="modal-content modal-md">
           <div class="modal-header">
-            <h3>💾 Cloud Sync & Data Management</h3>
+            <h3>${icon('save', { size: 18 })} Cloud Sync & Data Management</h3>
             <button class="btn-close" id="btn-close-sync-modal">&times;</button>
           </div>
           <div class="modal-body">
             <div class="sync-info-box card card-nested p-3 mb-3">
               <div class="card-header-flex">
                 <span class="font-bold">Device & Browser Sync Status</span>
-                <span class="badge badge-success">🟢 Active LocalStorage</span>
+                <span class="badge badge-success"><span class="live-dot"></span> Active LocalStorage</span>
               </div>
               <p class="text-muted text-sm mt-1">All goals, study sessions, streak counters, and quiz scores are automatically saved to your local browser storage.</p>
             </div>
 
             <div class="sync-actions-grid">
               <div class="card card-nested p-3">
-                <h4>📥 Export Backup (JSON)</h4>
+                <h4>${icon('download', { size: 16 })} Export Backup (JSON)</h4>
                 <p class="text-muted text-xs mb-2">Download a complete JSON snapshot of all your progress and certification data.</p>
                 <button class="btn btn-secondary btn-sm w-100" id="btn-do-export-json">Download JSON File</button>
               </div>
 
               <div class="card card-nested p-3">
-                <h4>📤 Restore / Import Backup</h4>
+                <h4>${icon('upload', { size: 16 })} Restore / Import Backup</h4>
                 <p class="text-muted text-xs mb-2">Restore data from a previously saved CertTracker JSON backup file.</p>
                 <input type="file" id="input-import-json" accept=".json" style="display: none;">
                 <button class="btn btn-secondary btn-sm w-100" id="btn-trigger-import">Select JSON File</button>
@@ -1220,7 +1237,7 @@ class CertTrackerApp {
             </div>
 
             <div class="danger-zone-box mt-3 p-3 card card-nested border-danger">
-              <h4 class="text-danger text-sm">⚠️ Reset to Demo Initial State</h4>
+              <h4 class="text-danger text-sm">${icon('alert-triangle', { size: 15, className: 'icon-sm' })} Reset to Demo Initial State</h4>
               <p class="text-muted text-xs mb-2">Reset the application back to the standard sample goals (AWS & PMP) and study sessions.</p>
               <button class="btn btn-outline-danger btn-sm" id="btn-do-reset-data">Reset to Sample Data</button>
             </div>
@@ -1294,21 +1311,21 @@ class CertTrackerApp {
             <div class="profile-photo-wrap">
               ${user.avatarPhoto
                 ? `<img src="${user.avatarPhoto}" class="user-big-avatar-photo" alt="Profile photo">`
-                : `<div class="user-big-avatar">${user.avatar || '👨‍💻'}</div>`
+                : `<div class="user-big-avatar">${initialsAvatar(user.name || 'Account', { size: 88 })}</div>`
               }
               <input type="file" id="input-avatar-photo" accept="image/*" style="display:none;">
-              <button class="btn btn-secondary btn-sm mt-2" id="btn-change-photo">📷 ${user.avatarPhoto ? 'Change Photo' : 'Upload Profile Photo'}</button>
-              ${user.avatarPhoto ? `<button class="btn-icon btn-sm ml-2" id="btn-remove-photo" title="Remove photo">🗑️</button>` : ''}
+              <button class="btn btn-secondary btn-sm mt-2" id="btn-change-photo">${icon('camera', { size: 15, className: 'icon-sm' })} ${user.avatarPhoto ? 'Change Photo' : 'Upload Profile Photo'}</button>
+              ${user.avatarPhoto ? `<button class="btn-icon btn-sm ml-2" id="btn-remove-photo" title="Remove photo">${icon('trash-2', { size: 15 })}</button>` : ''}
             </div>
             <h3 class="mt-2">${user.name}</h3>
             <p class="text-muted text-sm">${user.email}</p>
             <div class="badge badge-primary mt-1">Role: ${user.role || 'Member'}</div>
 
             <div class="account-section-block mt-3 text-left">
-              <h4 class="text-sm">🏅 Credly Verification</h4>
+              <h4 class="text-sm">${icon('award', { size: 15, className: 'icon-sm' })} Credly Verification</h4>
               ${user.credlyUsername ? `
                 <div class="credly-linked-row">
-                  <span class="badge badge-success">✅ Linked: ${user.credlyUsername}</span>
+                  <span class="badge badge-success">${icon('check-circle', { size: 13, className: 'icon-sm' })} Linked: ${user.credlyUsername}</span>
                   <button class="btn btn-secondary btn-sm" id="btn-unlink-credly">Unlink</button>
                 </div>
               ` : `
@@ -1320,10 +1337,10 @@ class CertTrackerApp {
             </div>
 
             <div class="account-section-block mt-3 text-left">
-              <h4 class="text-sm">🔐 Multi-Factor Authentication</h4>
+              <h4 class="text-sm">${icon('lock', { size: 15, className: 'icon-sm' })} Multi-Factor Authentication</h4>
               ${mfa.enabled ? `
                 <div class="credly-linked-row">
-                  <span class="badge badge-success">✅ Enabled via ${mfa.method}</span>
+                  <span class="badge badge-success">${icon('check-circle', { size: 13, className: 'icon-sm' })} Enabled via ${mfa.method}</span>
                   <button class="btn btn-outline-danger btn-sm" id="btn-disable-mfa">Disable</button>
                 </div>
               ` : `
@@ -1384,7 +1401,7 @@ class CertTrackerApp {
       const username = document.getElementById('credly-username-input').value.trim();
       if (!username) return;
       store.linkCredly(username);
-      this.showToast(`🏅 Credly account "${username}" linked & verified!`, 'success');
+      this.showToast(`Credly account "${username}" linked & verified!`, 'success');
       close();
       this.openUserMenuModal();
     });
@@ -1398,7 +1415,7 @@ class CertTrackerApp {
     modal.querySelector('#btn-enable-mfa')?.addEventListener('click', () => {
       const method = document.getElementById('mfa-method-select').value;
       store.setMfaSettings({ enabled: true, method });
-      this.showToast(`🔐 MFA enabled via ${method}`, 'success');
+      this.showToast(`MFA enabled via ${method}`, 'success');
       close();
       this.openUserMenuModal();
     });
@@ -1437,10 +1454,10 @@ class CertTrackerApp {
 
     const widgetHtml = `
       <div class="chatbot-widget" id="chatbot-widget">
-        <button class="chatbot-toggle-btn" id="chatbot-toggle-btn" title="AI Study Assistant">🤖</button>
+        <button class="chatbot-toggle-btn" id="chatbot-toggle-btn" title="AI Study Assistant">${icon('message-circle', { size: 24 })}</button>
         <div class="chatbot-panel" id="chatbot-panel" hidden>
           <div class="chatbot-header">
-            <span>🤖 AI Study Assistant</span>
+            <span>${icon('message-circle', { size: 16, className: 'icon-sm' })} AI Study Assistant</span>
             <button class="btn-close" id="btn-close-chatbot">&times;</button>
           </div>
           <div class="chatbot-messages" id="chatbot-messages"></div>
@@ -1546,7 +1563,7 @@ class CertTrackerApp {
 
     if (text.includes('tip') || text.includes('help') || text.includes('study') || text.includes('advice')) {
       const tip = getExamPrepTip(readiness.daysUntilExam);
-      return `🤖 Study tip for ${primaryGoal.certName}: ${tip.tip}`;
+      return `Study tip for ${primaryGoal.certName}: ${tip.tip}`;
     }
 
     if (text.includes('resource') || text.includes('material') || text.includes('book')) {
@@ -1563,8 +1580,8 @@ class CertTrackerApp {
 
     const toast = document.createElement('div');
     toast.className = `toast-item toast-${type}`;
-    const icon = type === 'success' ? '✅' : type === 'warning' ? '⚠️' : type === 'danger' ? '❌' : 'ℹ️';
-    toast.innerHTML = `<span>${icon} ${message}</span>`;
+    const typeIconName = type === 'success' ? 'check-circle' : type === 'warning' ? 'alert-triangle' : type === 'danger' ? 'x-circle' : 'info';
+    toast.innerHTML = `<span>${icon(typeIconName, { size: 15, className: 'icon-sm' })} ${message}</span>`;
     container.appendChild(toast);
 
     setTimeout(() => {

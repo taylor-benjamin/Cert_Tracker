@@ -129,7 +129,6 @@ export class AuthManager {
         id: 'usr_' + Date.now(),
         name,
         email,
-        avatar: '👩‍🎓',
         avatarPhoto: null,
         role: 'member',
         joinedDate: new Date().toISOString().split('T')[0],
@@ -148,7 +147,7 @@ export class AuthManager {
     modal.querySelector('#auth-reset-form').addEventListener('submit', (e) => {
       e.preventDefault();
       const email = document.getElementById('reset-email').value.trim();
-      alert(`🔐 Password Reset Simulated:\nA password reset link has been dispatched to ${email}.\n(In production, an automated token email with a 60-minute expiration is sent via transactional mailer.)`);
+      alert(`Password Reset Simulated:\nA password reset link has been dispatched to ${email}.\n(In production, an automated token email with a 60-minute expiration is sent via transactional mailer.)`);
       window.certTrackerApp?.showToast(`Reset instructions sent to ${email}`, 'info');
       showView('login');
     });

@@ -1,5 +1,6 @@
 // Admin Catalog: Supported Certifications, Default Hours & Exam Domains Management
 import { store } from './state.js';
+import { icon } from './icons.js';
 
 export class AdminManager {
   constructor(containerId) {
@@ -16,7 +17,7 @@ export class AdminManager {
       <div class="admin-catalog-card card mb-3">
         <div class="card-header-flex">
           <div>
-            <h3>🛠️ Manage Supported Certifications (Admin)</h3>
+            <h3>${icon('settings', { size: 18 })} Manage Supported Certifications (Admin)</h3>
             <p class="text-muted text-sm">Configure certification templates, benchmark study hours, and official exam domains</p>
           </div>
           <button class="btn btn-primary btn-sm" id="btn-add-cert">+ Add New Certification</button>
@@ -27,7 +28,6 @@ export class AdminManager {
             <div class="cert-admin-box card" data-cert-id="${cert.id}">
               <div class="cert-admin-top">
                 <div class="cert-admin-identity">
-                  <span class="cert-icon-lg">${cert.icon || '🎓'}</span>
                   <div>
                     <h4 class="cert-admin-name">${cert.name}</h4>
                     <span class="badge badge-secondary">${cert.code}</span>
@@ -36,8 +36,8 @@ export class AdminManager {
                   </div>
                 </div>
                 <div class="cert-admin-actions">
-                  <button class="btn-icon btn-sm" data-action="edit-cert" data-cert-id="${cert.id}" title="Edit Certification">✏️</button>
-                  <button class="btn-icon btn-sm text-danger" data-action="delete-cert" data-cert-id="${cert.id}" title="Delete Certification">🗑️</button>
+                  <button class="btn-icon btn-sm" data-action="edit-cert" data-cert-id="${cert.id}" title="Edit Certification">${icon('edit-2', { size: 15 })}</button>
+                  <button class="btn-icon btn-sm text-danger" data-action="delete-cert" data-cert-id="${cert.id}" title="Delete Certification">${icon('trash-2', { size: 15 })}</button>
                 </div>
               </div>
 
@@ -65,7 +65,7 @@ export class AdminManager {
                   <div class="resource-pill-group mt-1">
                     ${(cert.suggestedResources || []).map(r => `
                       <a href="${r.url}" target="_blank" rel="noopener noreferrer" class="resource-chip" title="${r.title}">
-                        🔗 ${r.title}
+                        ${icon('link', { size: 11, className: 'icon-sm' })} ${r.title}
                       </a>
                     `).join('')}
                   </div>
@@ -159,10 +159,6 @@ export class AdminManager {
                   <label class="form-label">Avg Weeks to Certify</label>
                   <input type="number" class="form-input" id="admin-cert-weeks" min="1" max="52" value="${cert?.avgWeeksToCertify || 10}">
                 </div>
-                <div class="form-group w-20">
-                  <label class="form-label">Icon Emoji</label>
-                  <input type="text" class="form-input" id="admin-cert-icon" value="${cert?.icon || '🎓'}" maxlength="2">
-                </div>
               </div>
 
               <div class="form-group">
@@ -197,7 +193,6 @@ export class AdminManager {
       const category = document.getElementById('admin-cert-category').value.trim();
       const hours = Number(document.getElementById('admin-cert-hours').value) || 80;
       const weeks = Number(document.getElementById('admin-cert-weeks').value) || 10;
-      const icon = document.getElementById('admin-cert-icon').value.trim() || '🎓';
 
       const domainsRaw = document.getElementById('admin-cert-domains').value.split('\n');
       const domains = domainsRaw
@@ -218,7 +213,6 @@ export class AdminManager {
           name, code, provider, category,
           defaultTargetHours: hours,
           avgWeeksToCertify: weeks,
-          icon,
           domains
         });
         window.certTrackerApp?.showToast('Certification updated successfully!', 'success');
@@ -227,7 +221,6 @@ export class AdminManager {
           code, name, provider, category,
           defaultTargetHours: hours,
           avgWeeksToCertify: weeks,
-          icon,
           domains
         });
         window.certTrackerApp?.showToast('New certification added to catalog!', 'success');

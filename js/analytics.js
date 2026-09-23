@@ -122,16 +122,16 @@ export function calculateExamReadiness(goal, sessions, quizHistory, certificatio
   let status = 'Early Stage';
   let badgeColor = 'var(--text-muted)';
   if (finalScore >= 85) {
-    status = 'Exam Ready! 🎯';
+    status = 'Exam Ready!';
     badgeColor = 'var(--color-success)';
   } else if (finalScore >= 70) {
-    status = 'Strong Candidate 🚀';
+    status = 'Strong Candidate';
     badgeColor = 'var(--color-primary)';
   } else if (finalScore >= 50) {
-    status = 'Solid Progress 📈';
+    status = 'Solid Progress';
     badgeColor = 'var(--color-warning)';
   } else {
-    status = 'Foundation Building 🌱';
+    status = 'Foundation Building';
     badgeColor = 'var(--color-accent)';
   }
 
@@ -173,7 +173,7 @@ export function getSmartReminders(goals, sessions) {
           reminders.push({
             id: 'rem_expiry_' + goal.id,
             type: diffDays <= 30 ? 'urgent' : 'warning',
-            icon: '⏳',
+            icon: 'clock',
             title: `${goal.certName}: Renewal due in ${diffDays} days`,
             message: 'Your certification is approaching its expiration date. Start logging renewal / continuing-education credits now.',
             goalId: goal.id
@@ -182,7 +182,7 @@ export function getSmartReminders(goals, sessions) {
           reminders.push({
             id: 'rem_expired_' + goal.id,
             type: 'urgent',
-            icon: '⚠️',
+            icon: 'alert-triangle',
             title: `${goal.certName}: Certification Expired`,
             message: 'This certification has passed its renewal deadline. Recertify to keep your credential active.',
             goalId: goal.id
@@ -204,7 +204,7 @@ export function getSmartReminders(goals, sessions) {
         reminders.push({
           id: 'rem_exam_' + goal.id,
           type: diffDays <= 14 ? 'urgent' : 'warning',
-          icon: diffDays <= 14 ? '⏳' : '📅',
+          icon: diffDays <= 14 ? 'clock' : 'calendar',
           title: `${goal.certName}: Exam in ${diffDays} days!`,
           message: `You have ${remainingHours.toFixed(1)} hrs left to reach your target. We recommend studying ~${dailyRate} hrs/day.`,
           goalId: goal.id
@@ -213,7 +213,7 @@ export function getSmartReminders(goals, sessions) {
         reminders.push({
           id: 'rem_exam_due_' + goal.id,
           type: 'urgent',
-          icon: '🎓',
+          icon: 'graduation-cap',
           title: `${goal.certName}: Target Exam Date Reached!`,
           message: 'Did you sit for the exam? Update your goal status or schedule your next test milestone.',
           goalId: goal.id
@@ -233,7 +233,7 @@ export function getSmartReminders(goals, sessions) {
         reminders.push({
           id: 'rem_weekly_' + goal.id,
           type: 'info',
-          icon: '⏰',
+          icon: 'clock',
           title: `Weekly Pace Alert: ${goal.certName}`,
           message: `Logged ${weekly.hours}h of your ${target}h weekly target. Need ${needed}h more before Sunday night!`,
           goalId: goal.id
@@ -287,7 +287,7 @@ export function buildTimelineEvents(goals) {
       events.push({
         id: 'evt_exam_' + goal.id,
         type: 'exam',
-        icon: '🎯',
+        icon: 'target',
         date: goal.targetDate,
         daysAway,
         certName: goal.certName,
@@ -301,7 +301,7 @@ export function buildTimelineEvents(goals) {
       events.push({
         id: 'evt_expiry_' + goal.id,
         type: 'expiry',
-        icon: '⏳',
+        icon: 'clock',
         date: goal.certExpiryDate,
         daysAway,
         certName: goal.certName,
@@ -332,13 +332,13 @@ export function getBenchmarkComparison(goal, sessions, cert) {
   let assessment = 'On Track';
   let badgeClass = 'badge-primary';
   if (userPaceWeekly >= avgWeekly * 1.2) {
-    assessment = 'Accelerated Velocity ⚡ (Fast Track)';
+    assessment = 'Accelerated Velocity (Fast Track)';
     badgeClass = 'badge-success';
   } else if (userPaceWeekly >= avgWeekly * 0.8) {
-    assessment = 'Industry Standard Pace 📊';
+    assessment = 'Industry Standard Pace';
     badgeClass = 'badge-info';
   } else {
-    assessment = 'Extended / Flexible Pace 🧘';
+    assessment = 'Extended / Flexible Pace';
     badgeClass = 'badge-warning';
   }
 

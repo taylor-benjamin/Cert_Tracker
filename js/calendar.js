@@ -1,5 +1,6 @@
 // Calendar Engine: Monthly Grid, Session Markers & Exam Date Milestones
 import { store } from './state.js';
+import { icon } from './icons.js';
 
 export class CalendarManager {
   constructor(containerId) {
@@ -81,7 +82,7 @@ export class CalendarManager {
         const hours = (totalMinutes / 60).toFixed(1);
         sessionMarkers += `
           <div class="cal-badge-session" title="${daySessions.length} session(s): ${hours} hrs">
-            ⚡ ${hours}h
+            ${icon('zap', { size: 11, className: 'icon-sm' })} ${hours}h
           </div>
         `;
       }
@@ -91,7 +92,7 @@ export class CalendarManager {
         dayExams.forEach(ex => {
           examMarkers += `
             <div class="cal-badge-exam" title="Target Exam Date: ${ex.certName}">
-              🎯 ${ex.certCode || 'Exam'}
+              ${icon('target', { size: 11, className: 'icon-sm' })} ${ex.certCode || 'Exam'}
             </div>
           `;
         });
