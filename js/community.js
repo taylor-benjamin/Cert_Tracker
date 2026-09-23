@@ -135,7 +135,7 @@ export function renderCommunityView(containerId) {
       <div class="community-sidebar">
         <div class="card focus-room-card mb-3">
           <div class="focus-room-header">
-            <h4>${icon('clock', { size: 16, className: 'icon-sm' })} Pomodoro Focus Timer</h4>
+            <h4>${icon('clock', { size: 16, className: 'icon-sm' })} Focus Timer</h4>
             <span class="badge badge-accent">Silent Co-Working</span>
           </div>
           <p class="text-muted text-sm mt-1">Study alongside 39 other candidates currently in focus mode.</p>
