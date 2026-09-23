@@ -246,8 +246,9 @@ class CertTrackerApp {
     store.setLastNotifiedAt(todayStr);
   }
 
-  dismissReminder(reminderId) {
+  dismissReminder(reminderId, btnEl) {
     store.dismissReminder(reminderId);
+    btnEl?.closest('.reminder-banner')?.remove();
   }
 
   // ================= DASHBOARD VIEW (US-8 & KPI METRICS) =================
@@ -273,7 +274,7 @@ class CertTrackerApp {
               <p>${r.message}</p>
             </div>
             <button class="btn btn-sm btn-outline-light" onclick="window.certTrackerApp.openLogSessionModal('${r.goalId}')">Log Now</button>
-            <button class="btn-close reminder-dismiss" title="Dismiss" onclick="window.certTrackerApp.dismissReminder('${r.id}')">&times;</button>
+            <button class="btn-close reminder-dismiss" title="Dismiss" onclick="window.certTrackerApp.dismissReminder('${r.id}', this)">&times;</button>
           </div>
         `).join('');
       }
