@@ -197,8 +197,8 @@ export const DEFAULT_BADGES = [
 
 export const INITIAL_USER = {
   id: 'usr_demo',
-  name: 'Alex Rivera',
-  email: 'alex.rivera@example.com',
+  name: 'Ben Taylor',
+  email: 'ben.taylor@example.com',
   avatarPhoto: null, // data URL of an uploaded profile photo, overrides the initials avatar when set
   role: 'member',
   joinedDate: '2026-08-15',

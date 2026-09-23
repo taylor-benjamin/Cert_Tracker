@@ -28,7 +28,7 @@ export class AuthManager {
             <form id="auth-login-form" style="display: ${isLogin ? 'block' : 'none'};">
               <div class="form-group">
                 <label class="form-label">Email Address</label>
-                <input type="email" class="form-input" id="login-email" required placeholder="alex@example.com" value="${store.state.user?.email || 'alex.rivera@example.com'}">
+                <input type="email" class="form-input" id="login-email" required placeholder="ben@example.com" value="${store.state.user?.email || 'ben.taylor@example.com'}">
               </div>
               <div class="form-group">
                 <div class="label-row-flex">
@@ -74,7 +74,7 @@ export class AuthManager {
               </p>
               <div class="form-group">
                 <label class="form-label">Registered Email</label>
-                <input type="email" class="form-input" id="reset-email" required placeholder="alex@example.com" value="${store.state.user?.email || ''}">
+                <input type="email" class="form-input" id="reset-email" required placeholder="ben@example.com" value="${store.state.user?.email || ''}">
               </div>
 
               <button type="submit" class="btn btn-primary w-100 mt-2">Send Reset Link</button>
