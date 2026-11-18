@@ -1,0 +1,14 @@
+# Files that must not be served as public static assets
+.git
+.github
+.wrangler
+.dev.vars
+node_modules
+worker
+migrations
+package.json
+package-lock.json
+wrangler.jsonc
+.assetsignore
+.gitignore
+*.md

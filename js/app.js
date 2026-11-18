@@ -1223,9 +1223,13 @@ class CertTrackerApp {
             <div class="sync-info-box card card-nested p-3 mb-3">
               <div class="card-header-flex">
                 <span class="font-bold">Device & Browser Sync Status</span>
-                <span class="badge badge-success"><span class="live-dot"></span> Active LocalStorage</span>
+                <span class="badge badge-success"><span class="live-dot"></span> ${store.isCloud ? 'Cloud' : 'This browser'}</span>
               </div>
-              <p class="text-muted text-sm mt-1">All goals, study sessions, streak counters, and quiz scores are automatically saved to your local browser storage.</p>
+              <p class="text-muted text-sm mt-1">${store.isCloud
+                ? `Saved to your account (${(store.state.user?.email || '').replace(/[&<>"']/g, c => `&#${c.charCodeAt(0)};`)}). Your data follows you to any device you log in on.`
+                : store.apiAvailable
+                  ? 'Saved in this browser only. Log in to sync across devices.'
+                  : 'Saved in this browser only.'}</p>
             </div>
 
             <div class="sync-actions-grid">
@@ -1600,6 +1604,7 @@ class CertTrackerApp {
 
 // Global App Instance
 window.certTrackerApp = new CertTrackerApp();
-window.addEventListener('DOMContentLoaded', () => {
+window.addEventListener('DOMContentLoaded', async () => {
+  await store.init(); // loads the signed-in account from the API when there is one
   window.certTrackerApp.init();
 });
