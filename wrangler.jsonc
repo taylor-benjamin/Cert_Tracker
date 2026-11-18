@@ -12,8 +12,7 @@
     {
       "binding": "DB",
       "database_name": "certtracker",
-      // Replace with the id printed by: npx wrangler d1 create certtracker
-      "database_id": "00000000-0000-0000-0000-000000000000",
+      "database_id": "0b51c3f8-d12f-4220-9640-5a9b6f469c4d",
       "migrations_dir": "migrations"
     }
   ]
