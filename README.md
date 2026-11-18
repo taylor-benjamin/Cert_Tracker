@@ -21,6 +21,13 @@ npm run db:migrate:remote             # creates the tables
 npm run deploy                        # prints your https://certtracker.<you>.workers.dev URL
 ```
 
+### Auto-deploy
+
+Every push to `main` runs `.github/workflows/deploy-cloudflare.yml`. It applies
+new migrations to the live database, then deploys the Worker. It needs a
+`CLOUDFLARE_API_TOKEN` repository secret with **Workers Scripts: Edit** and
+**D1: Edit** permissions.
+
 ### Making someone an admin
 
 Admins edit the shared certification list (the Admin tab is hidden for everyone
