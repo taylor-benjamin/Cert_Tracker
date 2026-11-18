@@ -28,14 +28,14 @@ export class AuthManager {
             <form id="auth-login-form" style="display: ${isLogin ? 'block' : 'none'};">
               <div class="form-group">
                 <label class="form-label">Email Address</label>
-                <input type="email" class="form-input" id="login-email" required placeholder="ben@example.com" value="${store.state.user?.email || 'ben.taylor@example.com'}">
+                <input type="email" class="form-input" id="login-email" required placeholder="ben@example.com" value="${store.apiAvailable ? '' : (store.state.user?.email || 'ben.taylor@example.com')}">
               </div>
               <div class="form-group">
                 <div class="label-row-flex">
                   <label class="form-label">Password</label>
                   <a href="#" class="auth-link text-xs" id="link-to-reset">Forgot password?</a>
                 </div>
-                <input type="password" class="form-input" id="login-password" required placeholder="••••••••" value="password123">
+                <input type="password" class="form-input" id="login-password" required placeholder="••••••••" value="${store.apiAvailable ? '' : 'password123'}">
               </div>
 
               <button type="submit" class="btn btn-primary w-100 mt-2">Log In to CertTracker</button>
@@ -57,7 +57,7 @@ export class AuthManager {
               </div>
               <div class="form-group">
                 <label class="form-label">Choose Password</label>
-                <input type="password" class="form-input" id="signup-password" minlength="6" required placeholder="At least 6 characters">
+                <input type="password" class="form-input" id="signup-password" minlength="8" required placeholder="At least 8 characters">
               </div>
 
               <button type="submit" class="btn btn-primary w-100 mt-2">Create Free Account</button>
@@ -110,33 +110,45 @@ export class AuthManager {
     modal.querySelector('#link-to-login')?.addEventListener('click', (e) => { e.preventDefault(); showView('login'); });
     modal.querySelector('#link-back-to-login')?.addEventListener('click', (e) => { e.preventDefault(); showView('login'); });
 
+    // Shows a server error inside the form and disables the button while a request runs
+    const runForm = async (form, action) => {
+      const btn = form.querySelector('button[type="submit"]');
+      let errEl = form.querySelector('.auth-error');
+      if (!errEl) {
+        errEl = document.createElement('p');
+        errEl.className = 'auth-error text-sm mb-2';
+        errEl.style.color = 'var(--danger, #dc2626)';
+        btn.before(errEl);
+      }
+      errEl.textContent = '';
+      btn.disabled = true;
+      const result = await action();
+      btn.disabled = false;
+      if (!result.ok) errEl.textContent = result.error;
+      return result.ok;
+    };
+
     // Handle Login
-    modal.querySelector('#auth-login-form').addEventListener('submit', (e) => {
+    const loginForm = modal.querySelector('#auth-login-form');
+    loginForm.addEventListener('submit', async (e) => {
       e.preventDefault();
       const email = document.getElementById('login-email').value.trim();
-      store.login(email);
-      window.certTrackerApp?.showToast(`Logged in successfully as ${email}`, 'success');
+      const password = document.getElementById('login-password').value;
+      if (!await runForm(loginForm, () => store.login(email, password))) return;
+      window.certTrackerApp?.showToast(`Logged in as ${email}`, 'success');
       close();
+      window.certTrackerApp?.applyTheme(store.state.theme);
       window.certTrackerApp?.renderAll();
     });
 
     // Handle Sign Up (US-1)
-    modal.querySelector('#auth-signup-form').addEventListener('submit', (e) => {
+    const signupForm = modal.querySelector('#auth-signup-form');
+    signupForm.addEventListener('submit', async (e) => {
       e.preventDefault();
       const name = document.getElementById('signup-name').value.trim();
       const email = document.getElementById('signup-email').value.trim();
-      store.setUser({
-        id: 'usr_' + Date.now(),
-        name,
-        email,
-        avatarPhoto: null,
-        role: 'member',
-        joinedDate: new Date().toISOString().split('T')[0],
-        credlyUsername: null,
-        mfa: { enabled: false, method: null },
-        onboardingComplete: false,
-        careerGoal: null
-      });
+      const password = document.getElementById('signup-password').value;
+      if (!await runForm(signupForm, () => store.signup(name, email, password))) return;
       window.certTrackerApp?.showToast(`Welcome to CertTracker, ${name}! Account created.`, 'success');
       close();
       window.certTrackerApp?.renderAll();
@@ -153,8 +165,9 @@ export class AuthManager {
     });
   }
 
-  logout() {
-    store.logout();
+  async logout() {
+    await store.logout();
+    window.certTrackerApp?.applyTheme(store.state.theme);
     window.certTrackerApp?.showToast('You have been logged out.', 'info');
     window.certTrackerApp?.renderAll();
   }

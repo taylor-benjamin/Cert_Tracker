@@ -1,0 +1,17 @@
+{
+  "name": "certtracker",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "wrangler dev",
+    "db:migrate:local": "wrangler d1 migrations apply certtracker --local",
+    "db:migrate:remote": "wrangler d1 migrations apply certtracker --remote",
+    "deploy": "wrangler deploy"
+  },
+  "devDependencies": {
+    "wrangler": "^4.164.0"
+  },
+  "allowScripts": {
+    "workerd@1.20261117.1": true
+  }
+}
