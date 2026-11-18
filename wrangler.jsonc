@@ -1,6 +1,7 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "certtracker",
+  "account_id": "25657b044a3f7a69cd63b5a2cd22a8af",
   "main": "worker/index.js",
   "compatibility_date": "2025-09-01",
   "assets": {
