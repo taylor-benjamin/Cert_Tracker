@@ -78,7 +78,8 @@ function defaultState() {
 // These arrays have their own D1 tables and sync record by record.
 const RECORD_KEYS = ['goals', 'sessions', 'quizHistory'];
 // Everything not listed here is saved together as the user's "settings" document.
-const NOT_SETTINGS = new Set(['user', 'isLoggedIn', ...RECORD_KEYS]);
+// Certifications are a shared catalog that only admins change, so they aren't per-user settings.
+const NOT_SETTINGS = new Set(['user', 'isLoggedIn', 'certifications', ...RECORD_KEYS]);
 const SYNC_DELAY_MS = 400;
 const RETRY_DELAY_MS = 5000;
 
@@ -133,14 +134,21 @@ class StateStore {
     return this.mode === 'cloud';
   }
 
+  // In demo mode everyone can try the Admin tab; with real accounts only admins can
+  get isAdmin() {
+    return !this.isCloud || this.state.user?.role === 'admin';
+  }
+
   hydrate(data) {
     const settings = {};
     for (const [k, v] of Object.entries(data.settings || {})) {
       if (!NOT_SETTINGS.has(k)) settings[k] = v;
     }
+    const defaults = defaultState();
     this.state = {
-      ...defaultState(),
+      ...defaults,
       ...settings,
+      certifications: data.certifications || defaults.certifications,
       user: data.user,
       isLoggedIn: true,
       goals: data.goals || [],
@@ -345,10 +353,22 @@ class StateStore {
       return { ok: true };
     }
     try {
+      // Switching accounts: save the current one's pending changes first
+      if (this.isCloud) await this.flushSync();
       const { res, data } = await apiFetch('/api/auth/login', { email, password });
       if (!res.ok) return { ok: false, error: data?.error || 'Login failed' };
       await this.loadRemote();
       return { ok: true };
+    } catch (e) {
+      return { ok: false, error: 'Could not reach the server' };
+    }
+  }
+
+  async changePassword(currentPassword, newPassword) {
+    try {
+      const { res, data } = await apiFetch('/api/auth/password', { currentPassword, newPassword });
+      if (res.ok) return { ok: true };
+      return { ok: false, error: data?.error || 'Could not change password' };
     } catch (e) {
       return { ok: false, error: 'Could not reach the server' };
     }
@@ -658,6 +678,20 @@ class StateStore {
   }
 
   // --- Admin: Manage Supported Certifications ---
+  // With accounts the catalog is shared, so the whole list goes to the admin endpoint
+  saveCatalog() {
+    if (!this.isCloud) {
+      this.saveState();
+      return;
+    }
+    this.notify();
+    apiFetch('/api/admin/certifications', { certifications: this.state.certifications })
+      .then(({ res, data }) => {
+        if (!res.ok) throw new Error(data?.error || `Save failed (${res.status})`);
+      })
+      .catch(e => window.certTrackerApp?.showToast(`Couldn't save the catalog: ${e.message}`, 'warning'));
+  }
+
   addSupportedCert(cert) {
     const newCert = {
       id: 'cert_' + Date.now(),
@@ -666,7 +700,7 @@ class StateStore {
       ...cert
     };
     this.state.certifications.push(newCert);
-    this.saveState();
+    this.saveCatalog();
     return newCert;
   }
 
@@ -674,7 +708,7 @@ class StateStore {
     const idx = this.state.certifications.findIndex(c => c.id === id);
     if (idx !== -1) {
       this.state.certifications[idx] = { ...this.state.certifications[idx], ...updates };
-      this.saveState();
+      this.saveCatalog();
       return this.state.certifications[idx];
     }
     return null;
@@ -682,7 +716,7 @@ class StateStore {
 
   deleteSupportedCert(id) {
     this.state.certifications = this.state.certifications.filter(c => c.id !== id);
-    this.saveState();
+    this.saveCatalog();
   }
 
   // --- Reset & Import/Export ---
@@ -691,6 +725,7 @@ class StateStore {
     if (this.isCloud) {
       // Keep the signed-in account; only the study data goes back to the demo set
       fresh.user = this.state.user;
+      fresh.certifications = this.state.certifications;
     }
     this.state = fresh;
     this.saveState();
@@ -708,6 +743,7 @@ class StateStore {
           // The signed-in account isn't replaced by an imported file
           delete data.user;
           delete data.isLoggedIn;
+          delete data.certifications;
         }
         this.state = { ...this.state, ...data };
         this.saveState();

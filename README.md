@@ -21,6 +21,17 @@ npm run db:migrate:remote             # creates the tables
 npm run deploy                        # prints your https://certtracker.<you>.workers.dev URL
 ```
 
+### Making someone an admin
+
+Admins edit the shared certification list (the Admin tab is hidden for everyone
+else). After that person signs up:
+
+```sh
+npx wrangler d1 execute certtracker --remote --command "UPDATE users SET role='admin' WHERE email='you@example.com'"
+```
+
+They need to log out and back in to see the Admin tab.
+
 ### Local development
 
 ```sh
@@ -32,7 +43,7 @@ npm run dev                           # http://localhost:8787
 
 | Path | What it is |
 |---|---|
-| `worker/index.js` | API: sign up, log in, log out, load state, sync changes |
+| `worker/index.js` | API: accounts, password change, rate limits, data sync, admin catalog |
 | `migrations/` | D1 schema (`wrangler d1 migrations create certtracker <name>` adds one) |
 | `js/state.js` | Front end store. Uses the API when it's there, otherwise the browser |
 | `.assetsignore` | Keeps the worker code and config from being served as public files |
@@ -40,3 +51,12 @@ npm run dev                           # http://localhost:8787
 Goals, study sessions and quiz attempts each have their own table. Everything
 else in the app state (theme, badges, certifications, sprint hub) is saved as
 one JSON settings row per user.
+
+### Security notes
+
+- Passwords are hashed with PBKDF2 (100k rounds). Sessions are HttpOnly cookies
+  that last 30 days.
+- Failed logins are limited to 10 per account and 30 per IP every 15 minutes.
+  Signups are limited to 10 per IP per hour.
+- Changing your password signs out every other device.
+- Password reset by email isn't built yet; it needs an email service.

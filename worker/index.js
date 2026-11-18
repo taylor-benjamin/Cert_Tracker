@@ -9,6 +9,14 @@ const MAX_BODY_BYTES = 4 * 1024 * 1024;
 const MAX_ITEM_BYTES = 256 * 1024;
 const MAX_PROFILE_BYTES = 1.5 * 1024 * 1024; // room for an avatar photo data URL
 const MAX_SETTINGS_BYTES = 1.5 * 1024 * 1024;
+const MIN_PASSWORD = 8;
+
+// [max attempts, window in seconds]
+const LIMITS = {
+  loginEmail: [10, 15 * 60], // failed logins per account
+  loginIp: [30, 15 * 60], // failed logins per IP
+  signupIp: [10, 60 * 60] // accounts created per IP
+};
 
 // Client collection name -> table + indexed columns pulled from the JSON object
 const COLLECTIONS = {
@@ -51,8 +59,10 @@ async function route(request, env, url) {
   if (pathname === '/api/auth/signup' && method === 'POST') return signup(request, env);
   if (pathname === '/api/auth/login' && method === 'POST') return login(request, env);
   if (pathname === '/api/auth/logout' && method === 'POST') return logout(request, env);
+  if (pathname === '/api/auth/password' && method === 'POST') return changePassword(request, env);
   if (pathname === '/api/state' && method === 'GET') return getState(request, env);
   if (pathname === '/api/sync' && method === 'POST') return sync(request, env);
+  if (pathname === '/api/admin/certifications' && method === 'POST') return saveCatalog(request, env);
 
   throw new HttpError(404, 'Not found');
 }
@@ -69,7 +79,10 @@ async function signup(request, env) {
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) || email.length > 254) {
     throw new HttpError(400, 'Enter a valid email');
   }
-  if (password.length < 8) throw new HttpError(400, 'Password must be at least 8 characters');
+  if (password.length < MIN_PASSWORD) throw new HttpError(400, `Password must be at least ${MIN_PASSWORD} characters`);
+
+  const ipKey = 'signup-ip:' + clientIp(request);
+  await checkLimit(env, ipKey, LIMITS.signupIp);
 
   const existing = await env.DB.prepare('SELECT 1 FROM users WHERE email = ?').bind(email).first();
   if (existing) throw new HttpError(409, 'An account with that email already exists');
@@ -89,6 +102,7 @@ async function signup(request, env) {
   await env.DB.prepare(
     'INSERT INTO users (id, email, name, password_hash, password_salt, profile) VALUES (?, ?, ?, ?, ?, ?)'
   ).bind(id, email, name, hash, salt, JSON.stringify(profile)).run();
+  await recordAttempt(env, ipKey, LIMITS.signupIp);
 
   const cookie = await createSession(env, id);
   const user = toClientUser({ id, email, name, role: 'member', profile: JSON.stringify(profile) });
@@ -100,6 +114,11 @@ async function login(request, env) {
   const email = String(body.email || '').trim().toLowerCase();
   const password = String(body.password || '');
 
+  const emailKey = 'login-email:' + email;
+  const ipKey = 'login-ip:' + clientIp(request);
+  await checkLimit(env, emailKey, LIMITS.loginEmail);
+  await checkLimit(env, ipKey, LIMITS.loginIp);
+
   const row = await env.DB.prepare(
     'SELECT id, email, name, role, profile, password_hash, password_salt FROM users WHERE email = ?'
   ).bind(email).first();
@@ -107,9 +126,12 @@ async function login(request, env) {
   // Hash even when the user doesn't exist so response time doesn't reveal which emails are registered
   const hash = await hashPassword(password, row ? row.password_salt : '00'.repeat(16));
   if (!row || !safeEqual(hash, row.password_hash)) {
+    await recordAttempt(env, emailKey, LIMITS.loginEmail);
+    await recordAttempt(env, ipKey, LIMITS.loginIp);
     throw new HttpError(401, 'Incorrect email or password');
   }
 
+  await env.DB.prepare('DELETE FROM rate_limits WHERE key = ?').bind(emailKey).run();
   const cookie = await createSession(env, row.id);
   return json({ user: toClientUser(row) }, 200, { 'Set-Cookie': cookie });
 }
@@ -122,11 +144,67 @@ async function logout(request, env) {
   return json({ ok: true }, 200, { 'Set-Cookie': sessionCookie('', 0) });
 }
 
+// Verifies the current password, sets the new one, and signs out every other device
+async function changePassword(request, env) {
+  const user = await requireUser(request, env);
+  const body = await readBody(request);
+  const current = String(body.currentPassword || '');
+  const next = String(body.newPassword || '');
+  if (next.length < MIN_PASSWORD) throw new HttpError(400, `Password must be at least ${MIN_PASSWORD} characters`);
+
+  const key = 'password-user:' + user.id;
+  await checkLimit(env, key, LIMITS.loginEmail);
+
+  const row = await env.DB.prepare('SELECT password_hash, password_salt FROM users WHERE id = ?').bind(user.id).first();
+  if (!safeEqual(await hashPassword(current, row.password_salt), row.password_hash)) {
+    await recordAttempt(env, key, LIMITS.loginEmail);
+    throw new HttpError(403, 'Current password is incorrect');
+  }
+
+  const salt = randomHex(16);
+  const tokenHash = await sha256(getCookie(request, SESSION_COOKIE));
+  await env.DB.batch([
+    env.DB.prepare('UPDATE users SET password_hash = ?, password_salt = ? WHERE id = ?')
+      .bind(await hashPassword(next, salt), salt, user.id),
+    env.DB.prepare('DELETE FROM auth_sessions WHERE user_id = ? AND token_hash != ?').bind(user.id, tokenHash),
+    env.DB.prepare('DELETE FROM rate_limits WHERE key = ?').bind(key)
+  ]);
+  return json({ ok: true });
+}
+
+// ---------- Rate limiting ----------
+
+function clientIp(request) {
+  return request.headers.get('CF-Connecting-IP') || 'unknown';
+}
+
+async function checkLimit(env, key, [max, windowSec]) {
+  const now = Math.floor(Date.now() / 1000);
+  const row = await env.DB.prepare('SELECT count, window_start FROM rate_limits WHERE key = ?').bind(key).first();
+  if (row && row.window_start > now - windowSec && row.count >= max) {
+    const minutes = Math.ceil((row.window_start + windowSec - now) / 60);
+    throw new HttpError(429, `Too many attempts. Try again in ${minutes} minute${minutes === 1 ? '' : 's'}.`);
+  }
+}
+
+async function recordAttempt(env, key, [, windowSec]) {
+  const now = Math.floor(Date.now() / 1000);
+  // A new window starts when the old one has expired
+  await env.DB.prepare(
+    `INSERT INTO rate_limits (key, count, window_start) VALUES (?1, 1, ?2)
+     ON CONFLICT (key) DO UPDATE SET
+       count = CASE WHEN window_start <= ?2 - ?3 THEN 1 ELSE count + 1 END,
+       window_start = CASE WHEN window_start <= ?2 - ?3 THEN ?2 ELSE window_start END`
+  ).bind(key, now, windowSec).run();
+}
+
 async function createSession(env, userId) {
   const token = randomHex(32);
   const expires = new Date(Date.now() + SESSION_DAYS * 86400000).toISOString();
   await env.DB.batch([
-    env.DB.prepare("DELETE FROM auth_sessions WHERE user_id = ? AND expires_at < datetime('now')").bind(userId),
+    env.DB.prepare('DELETE FROM auth_sessions WHERE user_id = ? AND expires_at < ?').bind(userId, new Date().toISOString()),
+    // Housekeeping: drop rate limit counters older than a day
+    env.DB.prepare('DELETE FROM rate_limits WHERE window_start < ?').bind(Math.floor(Date.now() / 1000) - 86400),
     env.DB.prepare('INSERT INTO auth_sessions (token_hash, user_id, expires_at) VALUES (?, ?, ?)')
       .bind(await sha256(token), userId, expires)
   ]);
@@ -153,15 +231,38 @@ async function getState(request, env) {
     env.DB.prepare(`SELECT data FROM ${c.table} WHERE user_id = ? ORDER BY rowid DESC`).bind(user.id)
   );
   queries.push(env.DB.prepare('SELECT data FROM user_settings WHERE user_id = ?').bind(user.id));
+  queries.push(env.DB.prepare('SELECT data FROM certifications ORDER BY position'));
 
   const results = await env.DB.batch(queries);
   const state = { user: toClientUser(user) };
   Object.keys(COLLECTIONS).forEach((key, i) => {
     state[key] = results[i].results.map(r => JSON.parse(r.data));
   });
-  const settingsRow = results[results.length - 1].results[0];
+  const n = Object.keys(COLLECTIONS).length;
+  const settingsRow = results[n].results[0];
   state.settings = settingsRow ? JSON.parse(settingsRow.data) : null;
+  const catalog = results[n + 1].results;
+  // null = no admin has saved a catalog yet, so the app uses its built-in list
+  state.certifications = catalog.length ? catalog.map(r => JSON.parse(r.data)) : null;
   return json(state);
+}
+
+// Admins replace the whole shared certification list at once. Body: { certifications: [...] }
+async function saveCatalog(request, env) {
+  const user = await requireUser(request, env);
+  if (user.role !== 'admin') throw new HttpError(403, 'Admins only');
+  const body = await readBody(request);
+  const certs = validateItems(body.certifications, 'certifications');
+  if (new Set(certs.map(c => c.id)).size !== certs.length) throw new HttpError(400, 'Duplicate certification ids');
+
+  await env.DB.batch([
+    env.DB.prepare('DELETE FROM certifications'),
+    env.DB.prepare(
+      `INSERT INTO certifications (id, position, data)
+       SELECT json_extract(value, '$.id'), key, json(value) FROM json_each(?1)`
+    ).bind(JSON.stringify(certs))
+  ]);
+  return json({ ok: true });
 }
 
 // Body: {

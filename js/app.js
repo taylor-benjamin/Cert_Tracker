@@ -174,6 +174,13 @@ class CertTrackerApp {
   }
 
   updateHeaderStats() {
+    // Admin tab only for admins once real accounts are in use
+    const adminTab = document.querySelector('.nav-tab[data-tab="admin"]');
+    if (adminTab) {
+      adminTab.style.display = store.isAdmin ? '' : 'none';
+      if (!store.isAdmin && adminTab.classList.contains('active')) this.switchTab('dashboard');
+    }
+
     const streak = store.calculateStreak();
     const streakEl = document.getElementById('header-streak-pill');
     if (streakEl) {
@@ -1366,6 +1373,18 @@ class CertTrackerApp {
               `}
             </div>
 
+            ${store.isCloud ? `
+            <div class="account-section-block mt-3 text-left">
+              <h4 class="text-sm">${icon('lock', { size: 15, className: 'icon-sm' })} Change Password</h4>
+              <form id="change-password-form">
+                <input type="password" class="form-input mb-2" id="current-password-input" placeholder="Current password" autocomplete="current-password" required>
+                <input type="password" class="form-input mb-2" id="new-password-input" placeholder="New password (8+ characters)" autocomplete="new-password" minlength="8" required>
+                <p class="text-sm mb-2" id="change-password-error" style="color: var(--danger, #dc2626);"></p>
+                <button type="submit" class="btn btn-primary btn-sm">Update Password</button>
+              </form>
+            </div>
+            ` : ''}
+
             <div class="user-menu-actions mt-4">
               <button class="btn btn-secondary w-100 mb-2" id="btn-switch-account">Switch Account / Sign In</button>
               <button class="btn btn-outline-danger w-100" id="btn-do-logout">Log Out</button>
@@ -1436,6 +1455,27 @@ class CertTrackerApp {
         close();
         this.openUserMenuModal();
       }
+    });
+
+    // Change password (accounts only)
+    const pwForm = modal.querySelector('#change-password-form');
+    pwForm?.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const btn = pwForm.querySelector('button[type="submit"]');
+      const errEl = modal.querySelector('#change-password-error');
+      errEl.textContent = '';
+      btn.disabled = true;
+      const result = await store.changePassword(
+        modal.querySelector('#current-password-input').value,
+        modal.querySelector('#new-password-input').value
+      );
+      btn.disabled = false;
+      if (!result.ok) {
+        errEl.textContent = result.error;
+        return;
+      }
+      pwForm.reset();
+      this.showToast('Password updated. Other devices were signed out.', 'success');
     });
 
     modal.querySelector('#btn-switch-account').addEventListener('click', () => {
